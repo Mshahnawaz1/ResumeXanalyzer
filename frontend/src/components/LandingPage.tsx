@@ -12,20 +12,43 @@ export const LandingPage: React.FC = () => {
 
   const faqs = [
     {
-      q: 'Is Gemini Nexus free to use?',
-      a: 'Yes, Gemini Nexus offers a free tier. You can sign up using Supabase and enter your Gemini API key from Google AI Studio to start chatting.',
+      q: 'What file formats are supported?',
+      a: 'Currently PDF resumes are supported. DOCX support is on the roadmap. The file is processed securely and never stored on our servers permanently.',
     },
     {
-      q: 'How does the authentication work?',
-      a: 'We use Supabase directly on the client side to authenticate your session. Your passwords and credentials are fully secured and managed by Supabase, never touched by intermediate APIs.',
+      q: 'How are the agents coordinated?',
+      a: 'Under the hood, four specialized LLM agents run inside a LangGraph dependency graph. Each agent handles a specific task — scoring, gap detection, job matching, and question generation — and their outputs compose into a single unified report.',
     },
     {
-      q: 'Where are my chat history and API keys stored?',
-      a: 'All data is stored local-first on your machine. API keys are kept securely in browser local storage and used directly in secure requests, ensuring complete privacy.',
+      q: 'Do I need an account to use ResumeXAnalyzer?',
+      a: 'Yes. An account lets us stream live agent progress back to you via Server-Sent Events and ensures your analysis session is scoped securely to your request.',
     },
     {
-      q: 'Can I use custom system prompts?',
-      a: 'Absolutely. You can configure custom persona settings in your workspace, allowing you to tailor the response style and model guidelines for each conversation.',
+      q: 'Is my resume data stored or used for training?',
+      a: 'No. Your resume and job description are used only for your analysis run. We do not store, log, or use your personal documents for any model training.',
+    },
+  ];
+
+  const agents = [
+    {
+      icon: '📊',
+      name: 'Resume Scorer',
+      description: 'Evaluates your resume holistically against the job description — assigning a fit score from 0–100 with a breakdown of what helps and what hurts.',
+    },
+    {
+      icon: '🔍',
+      name: 'Gap Detector',
+      description: 'Flags every missing skill, tool, certification, and experience the job description demands that your resume doesn\'t address.',
+    },
+    {
+      icon: '💼',
+      name: 'Job Matcher',
+      description: 'Searches real, live job postings that align with your profile and the target role — giving you a ranked list of positions to apply to.',
+    },
+    {
+      icon: '🎙️',
+      name: 'Interview Coach',
+      description: 'Generates tailored interview questions based specifically on the role and your gaps, so you know exactly what to prepare for.',
     },
   ];
 
@@ -33,27 +56,26 @@ export const LandingPage: React.FC = () => {
     <div className="landing-wrapper">
       <NavBar />
 
-
       {/* Hero Section */}
       <header className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            Talk to Gemini. <br />
-            <span className="text-fade">Keep it private, make it beautiful.</span>
+            Know your resume score<br />
+            <span className="text-fade">before the recruiter does.</span>
           </h1>
           <p className="hero-subtitle">
-            Gemini Nexus is a sleek, local-first workspace for Gemini AI. 
-            Zero intermediate servers, custom layouts, advanced syntax highlighting, and secure auth via Supabase.
+            Upload your resume and paste the job description. Four specialized AI agents run in parallel — scoring your fit, flagging skill gaps, matching real job openings, and building your interview prep list.
           </p>
           <div className="hero-actions">
             <button
               onClick={() => navigate('/register')}
               className="btn-hero-primary"
+              id="hero-get-started-btn"
             >
-              Get Started for Free
+              Analyze My Resume
             </button>
-            <a href="#features" className="btn-hero-secondary">
-              Explore Features
+            <a href="#how-it-works" className="btn-hero-secondary">
+              See how it works
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -74,22 +96,22 @@ export const LandingPage: React.FC = () => {
 
           <div className="hero-bullets">
             <span className="bullet-item">
-              <span className="bullet-dot"></span>Direct Supabase Auth
+              <span className="bullet-dot"></span>Resume Scoring
             </span>
             <span className="bullet-item">
-              <span className="bullet-dot"></span>Local-First Data
+              <span className="bullet-dot"></span>Skill Gap Analysis
             </span>
             <span className="bullet-item">
-              <span className="bullet-dot"></span>Gemini v2.5 Online
+              <span className="bullet-dot"></span>Live Job Matches
             </span>
             <span className="bullet-item">
-              <span className="bullet-dot"></span>Keyboard Shortcuts
+              <span className="bullet-dot"></span>Interview Questions
             </span>
           </div>
         </div>
       </header>
 
-      {/* Signature App Mockup (Visual Highlight) */}
+      {/* App Mockup Preview */}
       <section className="mockup-section">
         <div className="mockup-container">
           <div className="mockup-gradient-bg">
@@ -101,83 +123,60 @@ export const LandingPage: React.FC = () => {
                   <span className="control-dot minimize"></span>
                   <span className="control-dot expand"></span>
                 </div>
-                <div className="mockup-title">gemini_nexus_workspace</div>
+                <div className="mockup-title">resumexanalyzer — analysis workspace</div>
                 <div className="mockup-header-actions">
-                  <span className="action-pill">Workspace Agent</span>
+                  <span className="action-pill">4 Agents Running</span>
                 </div>
               </div>
 
-              {/* Window Workspace */}
+              {/* Window Body — two-panel layout */}
               <div className="mockup-body">
-                {/* Sidebar */}
-                <div className="mockup-sidebar">
-                  <div className="sidebar-sec-title">Conversations</div>
-                  <div className="sidebar-item active">
-                    <span className="sidebar-icon">💬</span>
-                    <span>TypeScript Debounce</span>
+                {/* Left input panel */}
+                <div className="mockup-sidebar" style={{ width: '200px' }}>
+                  <div className="sidebar-sec-title">Resume Upload</div>
+                  <div style={{ background: 'rgba(231,138,83,0.07)', border: '1.5px dashed rgba(231,138,83,0.35)', borderRadius: '8px', padding: '14px 10px', textAlign: 'center', fontSize: '10px', color: 'rgba(17,17,17,0.45)' }}>
+                    <div style={{ fontSize: '18px', marginBottom: '6px' }}>📄</div>
+                    <div style={{ fontWeight: 600, color: '#e78a53', marginBottom: '3px' }}>resume_final.pdf</div>
+                    <div>Uploaded · 1.2 MB</div>
                   </div>
-                  <div className="sidebar-item">
-                    <span className="sidebar-icon">💬</span>
-                    <span>FastAPI CORS Settings</span>
+
+                  <div className="sidebar-sec-title" style={{ marginTop: '12px' }}>Job Description</div>
+                  <div style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '6px', padding: '8px', fontSize: '9px', color: 'rgba(17,17,17,0.5)', lineHeight: 1.5 }}>
+                    Senior Frontend Engineer — React, TypeScript, GraphQL...
                   </div>
-                  <div className="sidebar-item">
-                    <span className="sidebar-icon">💬</span>
-                    <span>React Suspense Guide</span>
-                  </div>
+
                   <div className="sidebar-bottom">
-                    <div className="user-profile">
-                      <div className="avatar-small">U</div>
-                      <div className="user-email-text">user@bettershot.site</div>
+                    <div style={{ background: '#111', color: '#fff', borderRadius: '8px', padding: '8px 12px', textAlign: 'center', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>
+                      ▶ Run Analysis
                     </div>
                   </div>
                 </div>
 
-                {/* Chat Panel */}
+                {/* Right results panel */}
                 <div className="mockup-chat">
-                  <div className="chat-messages">
-                    <div className="mock-message user">
-                      <div className="avatar-circle">U</div>
-                      <div className="bubble">
-                        Write a TypeScript debounce function signature.
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto' }}>
+                    {/* Score card */}
+                    <div style={{ background: 'rgba(231,138,83,0.06)', border: '1px solid rgba(231,138,83,0.15)', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ fontSize: '22px', fontWeight: 800, color: '#e78a53', lineHeight: 1 }}>82</div>
+                      <div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#111' }}>Resume Score</div>
+                        <div style={{ fontSize: '9px', color: 'rgba(17,17,17,0.45)', marginTop: '1px' }}>Strong match — 3 gaps flagged</div>
                       </div>
                     </div>
 
-                    <div className="mock-message model">
-                      <div className="avatar-circle ai">AI</div>
-                      <div className="bubble">
-                        <p>Here is a clean implementation of a debounce function in TypeScript:</p>
-                        <div className="mock-code-block">
-                          <div className="code-header">
-                            <span>typescript</span>
-                            <span className="copy-text">Copy</span>
-                          </div>
-                          <pre>
-{`function debounce<T extends (...args: any[]) => void>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  
-  return (...args: Parameters<T>): void => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}`}
-                          </pre>
-                        </div>
+                    {/* Gaps */}
+                    <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(0,0,0,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Flagged Gaps</div>
+                    {['GraphQL experience', 'CI/CD pipeline knowledge', 'System design interview prep'].map((gap, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: 'rgba(17,17,17,0.7)', padding: '5px 8px', background: '#fff', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '6px' }}>
+                        <span style={{ color: '#e78a53', fontWeight: 700 }}>!</span> {gap}
                       </div>
-                    </div>
-                  </div>
+                    ))}
 
-                  <div className="mock-input-area">
-                    <div className="mock-input-box">
-                      <span>Ask Gemini a question...</span>
-                      <div className="mock-send-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="22" y1="2" x2="11" y2="13" />
-                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                        </svg>
-                      </div>
+                    {/* Job match */}
+                    <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(0,0,0,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Job Match</div>
+                    <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '6px', padding: '8px 10px', fontSize: '9.5px' }}>
+                      <div style={{ fontWeight: 600, color: '#111' }}>Frontend Engineer — Stripe</div>
+                      <div style={{ color: 'rgba(17,17,17,0.45)', marginTop: '2px' }}>San Francisco / Remote · 95% match</div>
                     </div>
                   </div>
                 </div>
@@ -187,79 +186,49 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Features Grid */}
+      {/* How It Works */}
+      <section id="how-it-works" className="security-section">
+        <div className="security-container">
+          <div className="security-content">
+            <h2 className="section-title">Four agents. One report. Live.</h2>
+            <p className="section-description">
+              ResumeXAnalyzer runs a LangGraph dependency graph that coordinates four specialized LLM agents. Agent progress streams directly to your browser via SSE — no waiting for a bulk result at the end.
+            </p>
+            <div className="security-stats">
+              <div className="stat-box">
+                <span className="stat-num">4</span>
+                <span className="stat-label">AI Agents</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-num">Live</span>
+                <span className="stat-label">SSE Streaming</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-num">0–100</span>
+                <span className="stat-label">Fit Score</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features / Agent Grid */}
       <section id="features" className="features-section">
         <div className="section-header">
-          <h2 className="section-title">Designed for developer velocity</h2>
+          <h2 className="section-title">What each agent does</h2>
           <p className="section-subtitle">
-            A minimalist, powerful interface engineered for clarity and fluid interaction.
+            Each agent is purpose-built for one job. Together they give you a full picture of your candidacy.
           </p>
         </div>
 
         <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">🛡️</div>
-            <h3>Supabase Client Auth</h3>
-            <p>
-              Direct, serverless connection to Supabase for secure signup and signin. 
-              No backend proxy required, keeping authentication standard and transparent.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h3>Instant Load Times</h3>
-            <p>
-              Written with React and optimized vanilla CSS. No bloated packages, 
-              rendering your markdown and code blocks in milliseconds.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">🔒</div>
-            <h3>Local-First Privacy</h3>
-            <p>
-              Your chat history and settings are stored safely in local storage. 
-              We never upload your data, code, or prompts to any secondary database.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">🎹</div>
-            <h3>Keyboard-First Navigation</h3>
-            <p>
-              Submit chats, insert snippet chips, navigate sidebar channels, and clear history 
-              effortlessly using configurable hotkeys.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Security Focus Section */}
-      <section id="security" className="security-section">
-        <div className="security-container">
-          <div className="security-content">
-            <h2 className="section-title">Security you can inspect</h2>
-            <p className="section-description">
-              Traditional SaaS products proxy your calls through their private servers, harvesting your telemetry and prompts. 
-              Gemini Nexus operates entirely on the client, directly communicating with Supabase and Gemini's API. 
-              Your credentials are yours alone.
-            </p>
-            <div className="security-stats">
-              <div className="stat-box">
-                <span className="stat-num">100%</span>
-                <span className="stat-label">Client-Side Logic</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-num">0</span>
-                <span className="stat-label">Tracking Cookies</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-num">Secure</span>
-                <span className="stat-label">Supabase Guarded</span>
-              </div>
+          {agents.map((agent) => (
+            <div className="feature-card" key={agent.name}>
+              <div className="feature-icon">{agent.icon}</div>
+              <h3>{agent.name}</h3>
+              <p>{agent.description}</p>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -268,7 +237,7 @@ export const LandingPage: React.FC = () => {
         <div className="section-header">
           <h2 className="section-title">Frequently Asked Questions</h2>
           <p className="section-subtitle">
-            Everything you need to know about the Gemini Nexus client dashboard.
+            Everything you need to know before uploading your first resume.
           </p>
         </div>
 
@@ -293,23 +262,25 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Call To Action */}
+      {/* CTA */}
       <section className="cta-section">
         <div className="cta-container">
-          <h2>Ready to experience Gemini Nexus?</h2>
-          <p>Create a secure account in seconds and unlock developer workspace utilities.</p>
+          <h2>Ready to know your fit score?</h2>
+          <p>Create an account in seconds and run your first resume analysis for free.</p>
           <div className="cta-buttons">
-             <button
+            <button
+              id="cta-analyze-btn"
               onClick={() => navigate('/register')}
               className="btn-cta-primary"
             >
-              Get Started Now
+              Analyze My Resume
             </button>
             <button
+              id="cta-signin-btn"
               onClick={() => navigate('/login')}
               className="btn-cta-secondary"
             >
-              Sign In to Account
+              Sign In
             </button>
           </div>
         </div>
@@ -319,19 +290,15 @@ export const LandingPage: React.FC = () => {
       <footer className="landing-footer">
         <div className="footer-container">
           <div className="footer-brand" onClick={() => navigate('/')}>
-            <svg viewBox="0 0 24 24" className="footer-logo-svg">
-              <path
-                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg viewBox="0 0 24 24" className="footer-logo-svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
-            <span>Gemini Nexus</span>
+            <span>ResumeXAnalyzer</span>
           </div>
-          <p className="footer-copy">© 2026 Gemini Nexus. Built with Supabase & Gemini AI.</p>
+          <p className="footer-copy">© 2026 ResumeXAnalyzer. Powered by LangGraph &amp; LLM Agents.</p>
           <div className="footer-links">
             <button onClick={() => navigate('/about')}>About</button>
             <button onClick={() => navigate('/privacy')}>Privacy Policy</button>

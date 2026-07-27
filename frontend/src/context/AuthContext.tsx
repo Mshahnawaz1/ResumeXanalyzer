@@ -214,6 +214,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (logoutError) throw logoutError;
         setUser(null);
         setToken(null);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
       }
     } catch (e: any) {
       console.error('Failed to logout:', e);

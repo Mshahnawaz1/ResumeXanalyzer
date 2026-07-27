@@ -2,6 +2,17 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+// Document scan icon for brand
+const BrandIcon: React.FC = () => (
+  <svg viewBox="0 0 24 24" className="nav-logo-svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </svg>
+);
+
 export const NavBar: React.FC = () => {
   const { isAuthenticated, user, logout, isMockMode } = useAuth();
   const navigate = useNavigate();
@@ -11,7 +22,7 @@ export const NavBar: React.FC = () => {
 
   const handleBrandClick = () => {
     if (isAuthenticated) {
-      navigate('/chat');
+      navigate('/analyze');
     } else {
       navigate('/');
     }
@@ -27,7 +38,7 @@ export const NavBar: React.FC = () => {
       {isMockMode && (
         <div className="mock-banner">
           <span>
-            <strong>Demo Mode:</strong> Supabase environment variables are not set. The authentication uses a local mock system.
+            <strong>Demo Mode:</strong> Supabase environment variables are not set. Authentication uses a local mock system.
           </span>
         </div>
       )}
@@ -35,33 +46,24 @@ export const NavBar: React.FC = () => {
       <nav className="landing-nav">
         <div className="nav-container">
           <div className="nav-brand" onClick={handleBrandClick}>
-            <svg viewBox="0 0 24 24" className="nav-logo-svg">
-              <path
-                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="brand-name">Gemini Nexus</span>
+            <BrandIcon />
+            <span className="brand-name">ResumeXAnalyzer</span>
           </div>
 
           <div className="nav-links">
-            {/* If on landing and NOT authenticated, show section scrolls */}
+            {/* Landing-page section anchors */}
             {!isAuthenticated && currentPath === '/' && (
               <>
+                <a href="#how-it-works" className="nav-link-item">How It Works</a>
                 <a href="#features" className="nav-link-item">Features</a>
-                <a href="#security" className="nav-link-item">Security</a>
                 <a href="#faq" className="nav-link-item">FAQ</a>
               </>
             )}
 
-            {/* General Navigation Links */}
+            {/* General nav when on inner pages */}
             {(isAuthenticated || currentPath !== '/') && (
-              <button 
-                onClick={() => navigate('/')} 
+              <button
+                onClick={() => navigate('/')}
                 className={`nav-link-item ${currentPath === '/' ? 'active-nav-link' : ''}`}
               >
                 Home
@@ -69,34 +71,15 @@ export const NavBar: React.FC = () => {
             )}
 
             {isAuthenticated && (
-              <button 
-                onClick={() => navigate('/chat')} 
-                className={`nav-link-item ${currentPath === '/chat' ? 'active-nav-link' : ''}`}
+              <button
+                onClick={() => navigate('/analyze')}
+                className={`nav-link-item ${currentPath === '/analyze' ? 'active-nav-link' : ''}`}
               >
-                Workspace
+                Analyzer
               </button>
             )}
 
-            <button 
-              onClick={() => navigate('/about')} 
-              className={`nav-link-item ${currentPath === '/about' ? 'active-nav-link' : ''}`}
-            >
-              About
-            </button>
-            <button 
-              onClick={() => navigate('/privacy')} 
-              className={`nav-link-item ${currentPath === '/privacy' ? 'active-nav-link' : ''}`}
-            >
-              Privacy
-            </button>
-            <button 
-              onClick={() => navigate('/terms')} 
-              className={`nav-link-item ${currentPath === '/terms' ? 'active-nav-link' : ''}`}
-            >
-              Terms
-            </button>
-
-            {/* Auth Actions on Right */}
+            {/* Auth actions */}
             {isAuthenticated ? (
               <div className="nav-user-area">
                 <div className="nav-avatar-badge" title={user?.email}>
@@ -105,8 +88,8 @@ export const NavBar: React.FC = () => {
                   </div>
                   <span className="nav-user-email">{user?.email}</span>
                 </div>
-                <button 
-                  onClick={handleSignOut} 
+                <button
+                  onClick={handleSignOut}
                   className="btn-nav-signout"
                   title="Sign Out"
                 >

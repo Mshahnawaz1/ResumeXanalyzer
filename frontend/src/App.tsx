@@ -6,19 +6,19 @@ import { AuthPage } from './components/AuthPage';
 import { AboutPage } from './components/AboutPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
-import { ChatDashboard } from './components/ChatDashboard';
+import { AnalyzeDashboard } from './components/AnalyzeDashboard';
 import './App.css';
 
-// A component that wraps protected routes
+// Wraps protected routes — redirects to login if not authenticated
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-// A component that wraps auth (login/register) routes to redirect when logged in
+// Wraps auth routes — redirects to analyzer if already logged in
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/chat" replace /> : <>{children}</>;
+  return isAuthenticated ? <Navigate to="/analyze" replace /> : <>{children}</>;
 };
 
 const router = createBrowserRouter([
@@ -55,17 +55,22 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: '/chat',
+    path: '/analyze',
     element: (
       <ProtectedRoute>
-        <ChatDashboard />
+        <AnalyzeDashboard />
       </ProtectedRoute>
     ),
+  },
+  // Legacy /chat redirect for any bookmarks
+  {
+    path: '/chat',
+    element: <Navigate to="/analyze" replace />,
   },
   {
     path: '*',
     element: <Navigate to="/" replace />,
-  }
+  },
 ]);
 
 const MainAppContent: React.FC = () => {
@@ -75,7 +80,7 @@ const MainAppContent: React.FC = () => {
     return (
       <div className="app-loader">
         <div className="spinner"></div>
-        <p>Verifying authentication session...</p>
+        <p>Verifying authentication session…</p>
       </div>
     );
   }
