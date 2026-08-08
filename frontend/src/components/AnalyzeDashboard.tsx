@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE_URL } from '../context/AuthContext';
 import { NavBar } from './NavBar';
 
 /* ── Icon helpers ────────────────────────────────────────────────────── */
@@ -233,8 +233,8 @@ export const AnalyzeDashboard: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // POST to the correct request url: http://127.0.0.1:8000/api/analyze
-      const res = await fetch('http://127.0.0.1:8000/api/analyze', {
+      // POST to the correct request url using API_BASE_URL
+      const res = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         headers,
         body: formData,

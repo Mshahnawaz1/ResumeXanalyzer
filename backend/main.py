@@ -28,7 +28,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://resume-x-analyzer.vercel.app",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,12 +84,17 @@ async def analyze(
         result = pipeline.invoke(initial_state)
     except Exception as exc:
         err_str = str(exc)
-        if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+        provider = settings.llm_provider.lower()
+        model = settings.openrouter_model if provider == "openrouter" else settings.gemini_model
+        if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "rate limit" in err_str.lower():
             raise HTTPException(
                 status_code=503,
-                detail="Gemini API quota exceeded. Please wait a moment and try again.",
+                detail=f"API quota exceeded or rate limited for model '{model}' ({provider}). Please try again later. Details: {exc}",
             )
-        raise HTTPException(status_code=500, detail=f"Pipeline error: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Pipeline error using model '{model}' ({provider}): {exc}"
+        )
 
     has_jd = bool(jd_text.strip())
 

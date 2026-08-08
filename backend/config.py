@@ -7,7 +7,7 @@ load_dotenv()
 
 
 class Settings:
-    llm_provider: str = os.getenv("LLM_PROVIDER", "gemini")
+    llm_provider: str = os.getenv("LLM_PROVIDER", "openrouter")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     # gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")

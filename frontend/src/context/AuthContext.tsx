@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { error: githubError } = await supabase!.auth.signInWithOAuth({
           provider: 'github',
           options: {
-            redirectTo: 'https://ugnulsylouxcvdqahnzj.supabase.co/auth/v1/callback'
+            redirectTo: window.location.origin
           }
         });
 
