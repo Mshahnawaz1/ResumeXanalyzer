@@ -26,14 +26,21 @@ app = FastAPI(
     version="0.2.0",
 )
 
+allowed_origins_list = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "https://resume-x-analyzer.vercel.app",
+]
+if settings.allowed_origins:
+    allowed_origins_list.extend([o.strip() for o in settings.allowed_origins.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://resume-x-analyzer.vercel.app",
-    ],
-    allow_methods=["*"],
+    allow_origins=allowed_origins_list,
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "ORIGINS"],
     allow_headers=["*"],
 )
 

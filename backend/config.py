@@ -15,6 +15,7 @@ class Settings:
     openrouter_base_url: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     openrouter_model: str = os.getenv("OPENROUTER_MODEL", "inclusionai/ling-3.0-flash:free")
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+    allowed_origins: str = os.getenv("ALLOWED_ORIGINS", "")
 
     def validate(self) -> None:
         provider = self.llm_provider.lower()
