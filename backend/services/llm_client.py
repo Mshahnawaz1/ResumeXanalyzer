@@ -80,6 +80,7 @@ def call_llm(prompt: str) -> dict:
     Raises ValueError on a second failure — never returns garbage silently.
     """
     provider = settings.llm_provider.lower()
+    model = settings.openrouter_model if provider == "openrouter" else settings.gemini_model
 
     def _execute(p: str) -> str:
         if provider == "gemini":
@@ -87,26 +88,36 @@ def call_llm(prompt: str) -> dict:
         elif provider == "openrouter":
             return _call_openrouter(p)
         else:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
+            raise ValueError(f"Unsupported LLM provider: {provider} (model: {model})")
 
+    # 1. Try first execution
     try:
         raw = _execute(prompt)
+    except Exception as exc:
+        raise RuntimeError(f"API call failed using model '{model}' ({provider}): {exc}") from exc
+
+    # 2. Try parsing JSON, retry on failure
+    try:
         return _extract_json(raw)
-    except (json.JSONDecodeError, ValueError, Exception) as exc:
-        raw_text = raw if 'raw' in locals() and raw else str(exc)
+    except (json.JSONDecodeError, ValueError) as exc:
         # --- one retry with correction hint ---
         correction_prompt = (
             f"{prompt}\n\n"
             "Your previous response could not be parsed as JSON. "
             "Return ONLY valid JSON with no markdown fences or extra text.\n"
-            f"Bad response was:\n{raw_text}"
+            f"Bad response was:\n{raw}"
         )
         try:
             retry_raw = _execute(correction_prompt)
-            return _extract_json(retry_raw)
         except Exception as retry_exc:
-            last_resp = retry_raw if 'retry_raw' in locals() and retry_raw else str(retry_exc)
+            raise RuntimeError(
+                f"API call failed during retry using model '{model}' ({provider}): {retry_exc}"
+            ) from retry_exc
+
+        try:
+            return _extract_json(retry_raw)
+        except (json.JSONDecodeError, ValueError) as retry_exc:
             raise ValueError(
-                f"LLM provider '{provider}' returned unparseable JSON after retry.\n"
-                f"Last raw response: {last_resp}"
+                f"LLM provider '{provider}' (model: {model}) returned unparseable JSON after retry.\n"
+                f"Last raw response: {retry_raw}"
             ) from retry_exc
