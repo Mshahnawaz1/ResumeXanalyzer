@@ -1,6 +1,7 @@
 """Test OpenRouter LLM connection using credentials from .env."""
 
 import os
+
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -39,12 +40,12 @@ if __name__ == "__main__":
         choice = response.choices[0]
         reply = choice.message.content
 
-        print(f"\n✅ SUCCESS — API responded!")
+        print("\n✅ SUCCESS — API responded!")
         print(f"   Finish reason : {choice.finish_reason}")
         if reply:
             print(f"   Model replied : {reply.strip()}")
         else:
-            print(f"   Content       : (empty / None — model may not have generated text)")
+            print("   Content       : (empty / None — model may not have generated text)")
         if response.usage:
             print(f"   Tokens used   → prompt: {response.usage.prompt_tokens}, "
                   f"completion: {response.usage.completion_tokens}, "

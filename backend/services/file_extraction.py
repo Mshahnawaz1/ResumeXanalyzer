@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import io
 
-import pdfplumber
 import docx
+import pdfplumber
 
 
 def extract_text(file_bytes: bytes, filename: str) -> str:

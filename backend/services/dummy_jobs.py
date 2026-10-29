@@ -100,7 +100,9 @@ _JOB_POSTINGS: list[dict] = [
         "company": "GenAI Co.",
         "location": "San Francisco, CA",
         "type": "Full-time",
-        "skills": ["Python", "LLM", "LangChain", "LangGraph", "FastAPI", "Prompt Engineering", "AI"],
+        "skills": [
+            "Python", "LLM", "LangChain", "LangGraph", "FastAPI", "Prompt Engineering", "AI",
+        ],
         "description": "Build AI-native products powered by large language models.",
     },
     {

@@ -31,15 +31,15 @@ Notes:
 
 from __future__ import annotations
 
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 
-from orchestrator.state import GraphState
-from agents.resume_parser import run_resume_parser
-from agents.jd_parser import run_jd_parser
-from agents.scoring_agent import run_scoring_agent
-from agents.job_matcher import run_job_matcher
 from agents.gap_agent import run_gap_agent
 from agents.interview_prep_agent import run_interview_prep_agent
+from agents.jd_parser import run_jd_parser
+from agents.job_matcher import run_job_matcher
+from agents.resume_parser import run_resume_parser
+from agents.scoring_agent import run_scoring_agent
+from orchestrator.state import GraphState
 
 
 def build_graph():

@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from google import genai
+
 from config import settings
 
 client = genai.Client(api_key=settings.gemini_api_key)
@@ -161,7 +162,8 @@ SAMPLE_GAPS = {
 # ─── Agent prompts (mirrors real agent templates) ─────────────────────────────
 
 def build_resume_parser_prompt() -> str:
-    return f"""You are a resume-parsing assistant. Extract structured data from the resume text below.
+    return f"""You are a resume-parsing assistant.
+Extract structured data from the resume text below.
 
 Return ONLY a valid JSON object matching this exact schema — no extra keys, no markdown:
 
@@ -181,7 +183,8 @@ RESUME TEXT:
 
 
 def build_jd_parser_prompt() -> str:
-    return f"""You are a job-description parsing assistant. Extract structured data from the job description below.
+    return f"""You are a job-description parsing assistant.
+Extract structured data from the job description below.
 
 Return ONLY a valid JSON object matching this exact schema — no extra keys, no markdown:
 
@@ -197,8 +200,8 @@ JOB DESCRIPTION TEXT:
 
 
 def build_scoring_prompt_jd_aware() -> str:
-    return f"""You are a professional resume scoring assistant. Score this resume against the provided
-job description on a 0-100 scale.
+    return f"""You are a professional resume scoring assistant.
+Score this resume against the provided job description on a 0-100 scale.
 
 Return ONLY a valid JSON object — no extra keys, no markdown:
 {{
@@ -228,7 +231,8 @@ RESUME DATA: {json.dumps(SAMPLE_RESUME_DATA)}"""
 
 
 def build_gap_prompt_jd_aware() -> str:
-    return f"""You are a senior career coach performing a gap analysis between a resume and a job description.
+    return f"""You are a senior career coach performing a gap analysis
+between a resume and a job description.
 
 Return ONLY a valid JSON object — no extra keys, no markdown:
 {{
@@ -330,7 +334,10 @@ MODELS = [
         free_tier="30 RPM / 1M TPM / 1500 RPD",
         context_window="1M tokens",
         speed="⚡⚡⚡ Fastest",
-        notes="25% cheaper. Higher RPM on free tier. Slightly lower quality — fine for structured JSON."
+        notes=(
+            "25% cheaper. Higher RPM on free tier. "
+            "Slightly lower quality — fine for structured JSON."
+        ),
     ),
     ModelPricing(
         name="gemini-1.5-flash",
@@ -350,7 +357,10 @@ MODELS = [
         free_tier="15 RPM / 4M TPM / 1500 RPD (4x more tokens!)",
         context_window="1M tokens",
         speed="⚡⚡⚡ Fastest",
-        notes="🏆 Best free tier value: 4M tokens/min vs 1M for other models. Good enough for parsing tasks."
+        notes=(
+            "🏆 Best free tier value: 4M tokens/min vs 1M for other models. "
+            "Good enough for parsing tasks."
+        ),
     ),
     ModelPricing(
         name="groq/llama-3.1-8b-instant",
@@ -434,7 +444,6 @@ def main():
     print("\n📊 Counting tokens via Gemini count_tokens API...")
     print("   (separate quota, no generation cost)\n")
 
-    all_agents: dict[str, AgentResult] = {}
 
     # Count tokens for unique prompts
     unique = {a.name: a for a in agents_jd + agents_standalone}
@@ -454,7 +463,8 @@ def main():
     print("\n" + "─"*70)
     print("  PER-AGENT TOKEN BREAKDOWN (JD-aware mode)")
     print("─"*70)
-    print(f"  {'Agent':<22} {'Input tok':>10} {'Output tok':>11} {'Total':>8}  {'Prompt chars':>13}")
+    print(f"  {'Agent':<22} {'Input tok':>10} {'Output tok':>11} {'Total':>8}  "
+          f"{'Prompt chars':>13}")
     print("  " + "─"*66)
 
     jd_input_total = jd_output_total = 0
@@ -475,7 +485,8 @@ def main():
     print("\n" + "─"*70)
     print("  PER-AGENT TOKEN BREAKDOWN (Standalone mode — no JD)")
     print("─"*70)
-    print(f"  {'Agent':<22} {'Input tok':>10} {'Output tok':>11} {'Total':>8}  {'Prompt chars':>13}")
+    print(f"  {'Agent':<22} {'Input tok':>10} {'Output tok':>11} {'Total':>8}  "
+          f"{'Prompt chars':>13}")
     print("  " + "─"*66)
 
     sa_input_total = sa_output_total = 0
@@ -491,7 +502,8 @@ def main():
     print(f"  {'Job Matcher (no LLM)':<22} {'0':>10} {'0':>11} {'0':>8}  {'N/A':>13}")
     print("  " + "─"*66)
     sa_total = sa_input_total + sa_output_total
-    print(f"  {'TOTAL (Standalone)':<22} {sa_input_total:>10,} {sa_output_total:>11,} {sa_total:>8,}")
+    print(f"  {'TOTAL (Standalone)':<22} {sa_input_total:>10,} {sa_output_total:>11,} "
+          f"{sa_total:>8,}")
 
     # ── Cost comparison ───────────────────────────────────────────────────────
     print("\n" + "─"*70)
@@ -519,7 +531,8 @@ def main():
             c_1k_str = f"${cost_1k:.3f}"
 
         marker = " ◀ current" if m.name == settings.gemini_model else ""
-        print(f"  {m.display:<38} {c_jd_str:>10} {c_sa_str:>11} {c_1k_str:>11}  {m.free_tier}{marker}")
+        print(f"  {m.display:<38} {c_jd_str:>10} {c_sa_str:>11} {c_1k_str:>11}  "
+              f"{m.free_tier}{marker}")
 
     # ── Free tier daily capacity ──────────────────────────────────────────────
     print("\n" + "─"*70)
@@ -534,12 +547,12 @@ def main():
         ("Gemini 1.5 Flash-8B",   4_000_000, 1500, 4),  # 4M TPM!
     ]
 
-    for name, tpm, rpd, agents in free_tier_data:
+    for name, tpm, rpd, _agents in free_tier_data:
         # Parallel agents in one request may all fire within the same minute
         # tpm limits how many requests can run concurrently
         requests_by_rpd = rpd
         requests_by_tpm = tpm // jd_total  # requests per minute ceiling
-        daily_cap = min(requests_by_rpd, requests_by_tpm * 60 * 24)  # conservative
+        min(requests_by_rpd, requests_by_tpm * 60 * 24)  # conservative
         print(f"  {name:<28} RPD limit: {rpd:>5}  |  TPM limit: {requests_by_tpm:>4} req/min  "
               f"→  ~{min(rpd, requests_by_tpm * 60):>5} req/day practical")
 
@@ -567,8 +580,7 @@ def main():
 
     print("\n" + "─"*70)
     print("  QUICK SWITCH: change GEMINI_MODEL in .env to swap models instantly.")
-    print("  For Groq/Ollama: swap services/gemini_client.py for langchain-groq")
-    print("  or ollama SDK — all agent prompts stay identical.")
+    print("  For Groq/Ollama: add a provider in services/llm_client.py")
     print("─"*70 + "\n")
 
 
