@@ -1,4 +1,4 @@
-/* Gemini Nexus — Design System & Custom Stylesheet (Better Shot Inspired) */
+/* ResumeXAnalyzer — Design System & Custom Stylesheet */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -466,60 +466,8 @@ body {
   margin-bottom: 12px;
 }
 
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  color: rgba(17, 17, 17, 0.6);
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.sidebar-item.active {
-  background: rgba(17, 17, 17, 0.04);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.sidebar-icon {
-  font-size: 12px;
-}
-
 .sidebar-bottom {
   margin-top: auto;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  padding-top: 10px;
-}
-
-.avatar-small {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.user-email-text {
-  font-size: 9px;
-  color: rgba(0, 0, 0, 0.4);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100px;
 }
 
 /* Mockup Chat Area */
@@ -530,133 +478,6 @@ body {
   background: #ffffff;
   padding: 20px;
   height: 100%;
-}
-
-.chat-messages {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-}
-
-.mock-message {
-  display: flex;
-  gap: 12px;
-  max-width: 90%;
-}
-
-.mock-message.user {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
-
-.avatar-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.05);
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar-circle.ai {
-  background: var(--accent-glow);
-  color: var(--accent);
-  border: 1px solid rgba(231, 138, 83, 0.1);
-}
-
-.mock-message .bubble {
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.mock-message.user .bubble {
-  background: var(--text-primary);
-  color: #ffffff;
-  border-bottom-right-radius: 3px;
-}
-
-.mock-message.model .bubble {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  color: var(--text-primary);
-  border-bottom-left-radius: 3px;
-}
-
-.mock-code-block {
-  margin-top: 10px;
-  border-radius: var(--radius-sm);
-  background: #0f172a;
-  color: #f8fafc;
-  overflow: hidden;
-  font-family: var(--font-mono);
-}
-
-.code-header {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 6px 12px;
-  font-size: 9px;
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.code-header span {
-  font-family: var(--font-mono);
-}
-
-.copy-text {
-  opacity: 0.5;
-  cursor: pointer;
-}
-
-.mock-code-block pre {
-  padding: 12px;
-  font-size: 9.5px;
-  font-family: var(--font-mono);
-  line-height: 1.4;
-  margin: 0;
-  overflow-x: auto;
-  text-align: left;
-}
-
-.mock-input-area {
-  margin-top: 16px;
-}
-
-.mock-input-box {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  font-size: 11px;
-  color: rgba(0, 0, 0, 0.3);
-}
-
-.mock-send-btn {
-  margin-left: auto;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mock-send-btn svg {
-  width: 10px;
-  height: 10px;
-  transform: translate(0.5px, -0.5px);
 }
 
 /* Features Grid Section */
@@ -966,7 +787,6 @@ body {
   color: var(--text-primary);
 }
 
-
 /* ==========================================================================
    AUTH PAGE STYLES
    ========================================================================== */
@@ -1248,7 +1068,6 @@ body {
   height: 18px;
 }
 
-
 /* ==========================================================================
    CHAT DASHBOARD STYLES
    ========================================================================== */
@@ -1378,148 +1197,6 @@ body {
   margin-bottom: 4px;
 }
 
-.sidebar-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
-  text-align: left;
-}
-
-.sidebar-btn:hover {
-  background: rgba(17, 17, 17, 0.03);
-  color: var(--text-primary);
-}
-
-.sidebar-btn.active {
-  background: rgba(17, 17, 17, 0.04);
-  color: var(--text-primary);
-  font-weight: 600;
-  border-left: 2.5px solid var(--text-primary);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding-left: 10px;
-}
-
-.sidebar-btn.danger {
-  color: var(--text-secondary);
-}
-
-.sidebar-btn.danger:hover:not(:disabled) {
-  background: #fef2f2;
-  color: #991b1b;
-}
-
-.sidebar-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.nav-icon {
-  width: 15px;
-  height: 15px;
-}
-
-/* Persona dropdown and settings */
-.persona-select-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.control-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.persona-dropdown {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  outline: none;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.persona-dropdown:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-.custom-prompt-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.custom-prompt-textarea {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: #ffffff;
-  font-size: 12px;
-  color: var(--text-primary);
-  resize: vertical;
-  outline: none;
-  transition: var(--transition);
-  line-height: 1.4;
-}
-
-.custom-prompt-textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-/* Hotkeys styling */
-.hotkeys-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.hotkey-item {
-  display: flex;
-  align-items: center;
-  font-size: 11.5px;
-  color: var(--text-secondary);
-}
-
-.hotkey-item kbd {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  color: var(--text-primary);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-  margin-right: 4px;
-}
-
-.hotkey-item span {
-  margin-left: 6px;
-}
-
 /* Chat Workspace */
 .chat-workspace {
   flex-grow: 1;
@@ -1571,27 +1248,6 @@ body {
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
-/* Active Persona Badge */
-.active-persona-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--accent-glow);
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-lg);
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent-hover);
-  margin-left: auto;
-}
-
-.spark-icon-active {
-  width: 12px;
-  height: 12px;
-  color: var(--accent);
-}
-
 /* Message Container */
 .message-container {
   flex-grow: 1;
@@ -1601,191 +1257,9 @@ body {
   flex-direction: column;
 }
 
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 720px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.message-wrapper {
-  display: flex;
-  gap: 14px;
-  max-width: 85%;
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.message-wrapper.user {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
-
-.message-wrapper.model {
-  align-self: flex-start;
-}
-
-.message-wrapper .message-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-  box-shadow: var(--shadow-sm);
-}
-
-.message-wrapper.user .message-avatar {
-  background: rgba(17, 17, 17, 0.05);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.message-wrapper.model .message-avatar {
-  background: var(--accent-glow);
-  color: var(--accent);
-  border: 1px solid rgba(231, 138, 83, 0.1);
-}
-
-.message-avatar svg {
-  width: 14px;
-  height: 14px;
-  color: currentColor;
-}
-
-.message-bubble {
-  border-radius: var(--radius-md);
-  padding: 12px 18px;
-  font-size: 14.5px;
-  line-height: 1.55;
-  word-break: break-word;
-}
-
-.message-wrapper.user .message-bubble {
-  background: var(--text-primary);
-  color: #ffffff;
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 12px rgba(17, 17, 17, 0.08);
-}
-
-.message-wrapper.model .message-bubble {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-}
-
-/* Typing Indicator */
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding: 6px 0;
-}
-
-.typing-indicator span {
-  width: 5px;
-  height: 5px;
-  background: var(--text-secondary);
-  border-radius: 50%;
-  animation: pulse 1s infinite ease-in-out;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
 @keyframes pulse {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
-}
-
-/* Code Block Styles */
-.code-block-container {
-  margin: 14px 0;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: #0f172a;
-  color: #f8fafc;
-  font-family: var(--font-mono);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.code-block-header {
-  background: rgba(255, 255, 255, 0.04);
-  padding: 8px 16px;
-  font-size: 11px;
-  color: rgba(248, 250, 252, 0.5);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.code-lang-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-}
-
-.lang-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.copy-btn {
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(248, 250, 252, 0.7);
-  padding: 4px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 10.5px;
-  font-weight: 500;
-  transition: var(--transition);
-}
-
-.copy-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-.code-pre {
-  padding: 16px;
-  margin: 0;
-  overflow-x: auto;
-  font-size: 12.5px;
-  font-family: var(--font-mono);
-  line-height: 1.5;
-  text-align: left;
-}
-
-.code-pre code {
-  font-family: var(--font-mono);
-  background: none;
-  color: inherit;
-  padding: 0;
-}
-
-.inline-code {
-  font-family: var(--font-mono);
-  background: rgba(17, 17, 17, 0.05);
-  color: #db2777;
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-size: 0.9em;
 }
 
 /* Chat Error Banner */
@@ -1922,84 +1396,6 @@ body {
   line-height: 1.35;
 }
 
-/* Chat Input Footer */
-.chat-footer {
-  padding: 16px 24px 24px;
-  border-top: 1px solid var(--border);
-  background: #ffffff;
-}
-
-.chat-input-form {
-  max-width: 720px;
-  width: 100%;
-  margin: 0 auto;
-  position: relative;
-  background: rgba(17, 17, 17, 0.01);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
-  display: flex;
-  align-items: flex-end;
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
-}
-
-.chat-input-form:focus-within {
-  border-color: var(--text-primary);
-  background: #ffffff;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-}
-
-.chat-input-form textarea {
-  flex-grow: 1;
-  background: none;
-  border: none;
-  outline: none;
-  resize: none;
-  color: var(--text-primary);
-  font-size: 14px;
-  padding: 8px 4px;
-  max-height: 160px;
-  line-height: 1.45;
-}
-
-.chat-input-form textarea::placeholder {
-  color: var(--text-secondary);
-}
-
-.btn-send {
-  background: var(--text-primary);
-  color: #ffffff;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition);
-  flex-shrink: 0;
-  margin-bottom: 2px;
-}
-
-.btn-send:hover:not(:disabled) {
-  background: #2a2a2a;
-  transform: scale(1.05);
-}
-
-.btn-send:disabled {
-  background: rgba(17, 17, 17, 0.04);
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-.btn-send svg {
-  width: 14px;
-  height: 14px;
-  color: currentColor;
-}
-
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .sidebar {
@@ -2008,32 +1404,14 @@ body {
     align-items: center;
     gap: 16px;
   }
-  .sidebar-sec-title,
-  .hotkeys-card,
-  .persona-select-container,
-  .custom-prompt-container,
-  .sidebar-btn span {
+  .sidebar-sec-title {
     display: none;
-  }
-  .nav-icon {
-    margin: 0;
-  }
-  .sidebar-btn {
-    padding: 12px;
-    justify-content: center;
-    border-left: none;
-  }
-  .sidebar-btn.active {
-    border-left: none;
-    border-radius: var(--radius-sm);
-    background: rgba(17, 17, 17, 0.04);
   }
   .sidebar-section.divider-top {
     border-top: none;
     padding-top: 0;
   }
 }
-
 
 @media (max-width: 600px) {
   .hero-section {
@@ -2063,7 +1441,7 @@ body {
   .auth-card {
     padding: 24px;
   }
-  .chat-header, .chat-footer {
+  .chat-header {
     padding: 12px 16px;
   }
   .message-container {
@@ -2237,7 +1615,6 @@ body {
     padding-bottom: 40px;
   }
 }
-
 
 /* ==========================================================================
    ANALYZE DASHBOARD — ResumeXAnalyzer

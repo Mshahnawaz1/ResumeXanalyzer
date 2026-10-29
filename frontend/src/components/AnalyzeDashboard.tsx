@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { useAuth, API_BASE_URL } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../lib/api';
 import { NavBar } from './NavBar';
 
 /* ── Icon helpers ────────────────────────────────────────────────────── */
@@ -40,7 +41,6 @@ interface AgentState {
   status: AgentStatus;
   label: string;
   icon: string;
-  result?: string;
 }
 
 interface ResumeData {
@@ -139,6 +139,15 @@ const INITIAL_AGENTS: Record<string, AgentState> = {
   coach:     { status: 'idle', label: 'Interview Coach',  icon: '🎙️' },
 };
 
+// JD Alignment is only shown in jd_aware mode (see render below)
+const SCORE_BARS: { key: keyof ScoreBreakdown; label: string }[] = [
+  { key: 'skills_score',       label: 'Skills Fit' },
+  { key: 'experience_score',   label: 'Experience' },
+  { key: 'education_score',    label: 'Education' },
+  { key: 'presentation_score', label: 'Presentation' },
+  { key: 'jd_match_score',     label: 'JD Alignment' },
+];
+
 /* ── Component ───────────────────────────────────────────────────────── */
 
 export const AnalyzeDashboard: React.FC = () => {
@@ -199,11 +208,7 @@ export const AnalyzeDashboard: React.FC = () => {
     setError(null);
     setResult(null);
     setActiveResultTab('score');
-    
-    // Reset agents
-    setAgents(Object.fromEntries(
-      Object.entries(INITIAL_AGENTS).map(([k, v]) => [k, { ...v, status: 'idle', result: undefined }])
-    ));
+    setAgents(INITIAL_AGENTS);
 
     // Simulated agent progress to show live activity
     let simulatedStep = 0;
@@ -214,7 +219,7 @@ export const AnalyzeDashboard: React.FC = () => {
       if (simulatedStep < progressKeys.length) {
         const currentKey = progressKeys[simulatedStep];
         updateAgent(currentKey, { status: 'done' });
-        
+
         simulatedStep++;
         if (simulatedStep < progressKeys.length) {
           const nextKey = progressKeys[simulatedStep];
@@ -233,7 +238,6 @@ export const AnalyzeDashboard: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // POST to the correct request url using API_BASE_URL
       const res = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         headers,
@@ -248,7 +252,7 @@ export const AnalyzeDashboard: React.FC = () => {
       }
 
       const data: AnalysisResult = await res.json();
-      
+
       // Update all agents to done
       progressKeys.forEach(k => {
         updateAgent(k, { status: 'done' });
@@ -272,9 +276,7 @@ export const AnalyzeDashboard: React.FC = () => {
     setResult(null);
     setError(null);
     setIsRunning(false);
-    setAgents(Object.fromEntries(
-      Object.entries(INITIAL_AGENTS).map(([k, v]) => [k, { ...v, status: 'idle', result: undefined }])
-    ));
+    setAgents(INITIAL_AGENTS);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -521,7 +523,6 @@ export const AnalyzeDashboard: React.FC = () => {
                         cx="50" cy="50" r="42"
                         className="ring-fill"
                         strokeDasharray={`${(result.score.overall_score / 100) * 263.9} 263.9`}
-                        strokeDashoffset="0"
                         transform="rotate(-90 50 50)"
                       />
                     </svg>
@@ -563,43 +564,19 @@ export const AnalyzeDashboard: React.FC = () => {
                     <div className="tab-panel animate-fade-in">
                       <div className="result-section-title">Resume Fit Breakdown</div>
                       <div className="score-breakdown">
-                        <div className="score-bar-row">
-                          <span>Skills Fit</span>
-                          <div className="score-bar-track">
-                            <div className="score-bar-fill" style={{ width: `${result.score.breakdown.skills_score}%` }}></div>
-                          </div>
-                          <span className="score-bar-pct">{result.score.breakdown.skills_score}%</span>
-                        </div>
-                        <div className="score-bar-row">
-                          <span>Experience</span>
-                          <div className="score-bar-track">
-                            <div className="score-bar-fill" style={{ width: `${result.score.breakdown.experience_score}%` }}></div>
-                          </div>
-                          <span className="score-bar-pct">{result.score.breakdown.experience_score}%</span>
-                        </div>
-                        <div className="score-bar-row">
-                          <span>Education</span>
-                          <div className="score-bar-track">
-                            <div className="score-bar-fill" style={{ width: `${result.score.breakdown.education_score}%` }}></div>
-                          </div>
-                          <span className="score-bar-pct">{result.score.breakdown.education_score}%</span>
-                        </div>
-                        <div className="score-bar-row">
-                          <span>Presentation</span>
-                          <div className="score-bar-track">
-                            <div className="score-bar-fill" style={{ width: `${result.score.breakdown.presentation_score}%` }}></div>
-                          </div>
-                          <span className="score-bar-pct">{result.score.breakdown.presentation_score}%</span>
-                        </div>
-                        {result.mode === 'jd_aware' && result.score.breakdown.jd_match_score !== null && (
-                          <div className="score-bar-row">
-                            <span>JD Alignment</span>
-                            <div className="score-bar-track">
-                              <div className="score-bar-fill" style={{ width: `${result.score.breakdown.jd_match_score}%` }}></div>
+                        {SCORE_BARS.map(({ key, label }) => {
+                          const value = result.score.breakdown[key];
+                          if (value === null || (key === 'jd_match_score' && result.mode !== 'jd_aware')) return null;
+                          return (
+                            <div key={key} className="score-bar-row">
+                              <span>{label}</span>
+                              <div className="score-bar-track">
+                                <div className="score-bar-fill" style={{ width: `${value}%` }}></div>
+                              </div>
+                              <span className="score-bar-pct">{value}%</span>
                             </div>
-                            <span className="score-bar-pct">{result.score.breakdown.jd_match_score}%</span>
-                          </div>
-                        )}
+                          );
+                        })}
                       </div>
 
                       {result.score.summary && (

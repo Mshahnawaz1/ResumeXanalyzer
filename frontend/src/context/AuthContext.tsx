@@ -1,17 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { supabase, isMockAuth } from '../lib/supabaseClient';
-
-// API Base URL config
-const formatApiUrl = (rawUrl?: string): string => {
-  if (!rawUrl || !rawUrl.trim()) return 'http://localhost:8000';
-  let cleaned = rawUrl.trim().replace(/\/+$/, '');
-  if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
-    cleaned = `https://${cleaned}`;
-  }
-  return cleaned;
-};
-
-export const API_BASE_URL = formatApiUrl(import.meta.env.VITE_API_URL);
 
 export interface User {
   id: string;
@@ -37,6 +25,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  // Only covers the initial session check — App swaps the whole router for a
+  // loader while this is true, so auth actions must not toggle it.
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,7 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     setError(null);
     try {
       if (isMockAuth) {
@@ -137,13 +126,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e: any) {
       setError(e.message || 'An error occurred during login.');
       throw e;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const loginWithGithub = async () => {
-    setIsLoading(true);
     setError(null);
     try {
       if (isMockAuth) {
@@ -170,13 +156,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e: any) {
       setError(e.message || 'An error occurred during GitHub login.');
       throw e;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const register = async (email: string, password: string): Promise<string> => {
-    setIsLoading(true);
     setError(null);
     try {
       if (isMockAuth) {
@@ -196,45 +179,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.user && data.session === null) {
           return 'Registration successful! Please check your email for the confirmation link.';
         }
-        
+
         return 'Registration successful! You are now logged in.';
       }
     } catch (e: any) {
       setError(e.message || 'An error occurred during registration.');
       throw e;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    setIsLoading(true);
     setError(null);
     try {
       if (isMockAuth) {
-        // Mock Logout
-        setUser(null);
-        setToken(null);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
       } else {
-        // Supabase Logout
         const { error: logoutError } = await supabase!.auth.signOut();
         if (logoutError) throw logoutError;
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
       }
+      setUser(null);
+      setToken(null);
     } catch (e: any) {
       console.error('Failed to logout:', e);
       setError(e.message || 'Failed to sign out.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const clearError = () => setError(null);
+  // Stable identity so consumers can list it in effect deps
+  const clearError = useCallback(() => setError(null), []);
 
   const value: AuthContextType = {
     user,

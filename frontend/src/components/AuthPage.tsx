@@ -23,7 +23,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
     clearError();
     setValidationError(null);
     setSuccessMessage(null);
-  }, [initialMode]);
+  }, [initialMode, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,8 +132,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
           <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
           <p className="auth-subtitle">
             {isLogin
-              ? 'Enter your details to access the AI Chat dashboard'
-              : 'Sign up to start chatting with Gemini AI'}
+              ? 'Enter your details to access the resume analyzer'
+              : 'Sign up to start analyzing your resume'}
           </p>
         </div>
 
