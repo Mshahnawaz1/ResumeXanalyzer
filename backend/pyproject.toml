@@ -1,7 +1,7 @@
 [project]
 name = "resumex-analyzer"
 version = "0.1.0"
-description = "Multi-agent resume analyzer powered by Gemini + LangGraph"
+description = "Multi-agent resume analyzer powered by LLMs + LangGraph"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,7 +9,6 @@ dependencies = [
     "uvicorn>=0.30",
     "python-dotenv>=1.0",
     "google-genai>=2.0",
-    "google-generativeai>=0.8",
     "langgraph>=0.2",
     "pdfplumber>=0.11",
     "python-docx>=1.1",
@@ -17,12 +16,21 @@ dependencies = [
     "openai>=1.0",
 ]
 
-[project.optional-dependencies]
-dev = ["pytest>=8.0"]
-
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["live: hits a real LLM provider (needs API keys); run with `-m live`"]
+addopts = "-m 'not live'"
 
-[tool.uv]
-dev-dependencies = ["pytest>=9.1.1", "pygments>=2.20.0"]
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pygments>=2.20.0",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
