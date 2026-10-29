@@ -13,7 +13,7 @@ export const LandingPage: React.FC = () => {
   const faqs = [
     {
       q: 'What file formats are supported?',
-      a: 'Currently PDF resumes are supported. DOCX support is on the roadmap. The file is processed securely and never stored on our servers permanently.',
+      a: 'PDF and DOCX resumes are supported. The file is processed securely and never stored on our servers permanently.',
     },
     {
       q: 'How are the agents coordinated?',
@@ -21,7 +21,7 @@ export const LandingPage: React.FC = () => {
     },
     {
       q: 'Do I need an account to use ResumeXAnalyzer?',
-      a: 'Yes. An account lets us stream live agent progress back to you via Server-Sent Events and ensures your analysis session is scoped securely to your request.',
+      a: 'Yes. An account keeps the analyzer behind a sign-in so each analysis session is scoped to you.',
     },
     {
       q: 'Is my resume data stored or used for training?',
@@ -43,7 +43,7 @@ export const LandingPage: React.FC = () => {
     {
       icon: '💼',
       name: 'Job Matcher',
-      description: 'Searches real, live job postings that align with your profile and the target role — giving you a ranked list of positions to apply to.',
+      description: 'Ranks job postings by how closely their required skills match your resume — giving you a shortlist of positions to look at.',
     },
     {
       icon: '🎙️',
@@ -64,7 +64,7 @@ export const LandingPage: React.FC = () => {
             <span className="text-fade">before the recruiter does.</span>
           </h1>
           <p className="hero-subtitle">
-            Upload your resume and paste the job description. Four specialized AI agents run in parallel — scoring your fit, flagging skill gaps, matching real job openings, and building your interview prep list.
+            Upload your resume and paste the job description. Four specialized AI agents run in parallel — scoring your fit, flagging skill gaps, matching job openings, and building your interview prep list.
           </p>
           <div className="hero-actions">
             <button
