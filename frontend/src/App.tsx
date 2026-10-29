@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LandingPage } from './components/LandingPage';
-import { AuthPage } from './components/AuthPage';
-import { AboutPage } from './components/AboutPage';
-import { PrivacyPage } from './components/PrivacyPage';
-import { TermsPage } from './components/TermsPage';
-import { AnalyzeDashboard } from './components/AnalyzeDashboard';
 import './App.css';
+
+// Landing page stays in the main bundle for first paint; everything else
+// is split into its own chunk and fetched on navigation.
+const AuthPage = lazy(() => import('./components/AuthPage').then(m => ({ default: m.AuthPage })));
+const AboutPage = lazy(() => import('./components/AboutPage').then(m => ({ default: m.AboutPage })));
+const PrivacyPage = lazy(() => import('./components/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./components/TermsPage').then(m => ({ default: m.TermsPage })));
+const AnalyzeDashboard = lazy(() =>
+  import('./components/AnalyzeDashboard').then(m => ({ default: m.AnalyzeDashboard })),
+);
+
+const FullPageLoader: React.FC<{ message: string }> = ({ message }) => (
+  <div className="app-loader">
+    <div className="spinner"></div>
+    <p>{message}</p>
+  </div>
+);
 
 // Wraps protected routes — redirects to login if not authenticated
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -77,15 +89,14 @@ const MainAppContent: React.FC = () => {
   const { isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="app-loader">
-        <div className="spinner"></div>
-        <p>Verifying authentication session…</p>
-      </div>
-    );
+    return <FullPageLoader message="Verifying authentication session…" />;
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <Suspense fallback={<FullPageLoader message="Loading…" />}>
+      <RouterProvider router={router} />
+    </Suspense>
+  );
 };
 
 const App: React.FC = () => {
