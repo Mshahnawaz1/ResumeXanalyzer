@@ -37,8 +37,7 @@ Schema (all fields):
 from __future__ import annotations
 
 from orchestrator.state import GraphState
-from services.gemini_client import call_gemini
-
+from services.llm_client import call_llm
 
 _PROMPT_TEMPLATE = """\
 You are a resume-parsing assistant. Extract structured data from the resume text below.
@@ -88,5 +87,5 @@ def run_resume_parser(state: GraphState) -> dict:
         return {"errors": ["ResumeParser: resume_text is empty."]}
 
     prompt = _PROMPT_TEMPLATE.format(resume_text=resume_text)
-    resume_data = call_gemini(prompt)
+    resume_data = call_llm(prompt)
     return {"resume_data": resume_data}

@@ -15,20 +15,20 @@ Run:
     uv run pytest tests/test_full.py -v
 
 Mocking strategy:
-  - Agent unit tests: patch `agents.<module>.call_gemini` (where agents
-    bind the name at import time via `from services.gemini_client import call_gemini`)
-  - Full pipeline tests: patch `services.gemini_client.call_gemini` which
-    is the canonical name used by the already-imported singleton at module level
+  - Agent unit + full pipeline tests: patch `agents.<module>.call_llm` (agents
+    bind the name at import time via `from services.llm_client import call_llm`)
   - API tests: patch `orchestrator.graph.pipeline.invoke` directly
 """
 
 from __future__ import annotations
 
 import io
-import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
+
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
 
 # ─────────────────────────────────────────────────────────────
 # 1. Health endpoint
@@ -36,6 +36,7 @@ import pytest
 
 def test_health_endpoint():
     from fastapi.testclient import TestClient
+
     from main import app
     client = TestClient(app)
     resp = client.get("/health")
@@ -52,6 +53,7 @@ def test_health_endpoint():
 
 def test_extract_docx():
     import docx as _docx
+
     from services.file_extraction import extract_text
 
     doc = _docx.Document()
@@ -75,6 +77,7 @@ def test_extract_unsupported_type():
 
 def test_extract_empty_docx():
     import docx as _docx
+
     from services.file_extraction import extract_text
     doc = _docx.Document()
     buf = io.BytesIO()
@@ -102,7 +105,7 @@ def test_job_matcher_returns_top_n():
 
 
 def test_job_matcher_skill_scoring():
-    from services.dummy_jobs import get_job_matches, _compute_match_score
+    from services.dummy_jobs import _compute_match_score
     # 100% match
     score = _compute_match_score(["Python", "FastAPI", "PostgreSQL", "Docker", "REST API", "SQL"],
                                   ["Python", "FastAPI", "PostgreSQL", "Docker", "REST API", "SQL"])
@@ -174,7 +177,8 @@ MOCK_RESUME_DATA = {
     "skills": ["Python", "FastAPI", "Docker", "PostgreSQL"],
     "experience": [{"company": "TechCorp", "title": "Senior Engineer",
                     "start_date": "2021", "end_date": "Present", "description": "Built APIs."}],
-    "education": [{"institution": "Stanford", "degree": "B.S.", "field": "CS", "graduation_year": "2019"}],
+    "education": [{"institution": "Stanford", "degree": "B.S.", "field": "CS",
+                   "graduation_year": "2019"}],
     "certifications": ["AWS Certified"],
     "languages": ["English"],
 }
@@ -219,7 +223,7 @@ MOCK_INTERVIEW_QUESTIONS = {
 }
 
 
-@patch("agents.resume_parser.call_gemini", return_value=MOCK_RESUME_DATA)
+@patch("agents.resume_parser.call_llm", return_value=MOCK_RESUME_DATA)
 def test_resume_parser_node(mock_gemini):
     from agents.resume_parser import run_resume_parser
     state = {"resume_text": "John Doe, john@example.com, Python developer.", "errors": []}
@@ -230,7 +234,7 @@ def test_resume_parser_node(mock_gemini):
     print("\n  ✅ ResumeParser: returns structured resume_data")
 
 
-@patch("agents.jd_parser.call_gemini", return_value=MOCK_JD_DATA)
+@patch("agents.jd_parser.call_llm", return_value=MOCK_JD_DATA)
 def test_jd_parser_with_text(mock_gemini):
     from agents.jd_parser import run_jd_parser
     state = {"jd_text": "We need a Backend Engineer with Python skills.", "errors": []}
@@ -258,7 +262,7 @@ def test_jd_parser_whitespace_only():
     print("\n  ✅ JDParser: whitespace-only jd_text → jd_data=None")
 
 
-@patch("agents.scoring_agent.call_gemini", return_value=MOCK_SCORE)
+@patch("agents.scoring_agent.call_llm", return_value=MOCK_SCORE)
 def test_scoring_agent_with_jd(mock_gemini):
     from agents.scoring_agent import run_scoring_agent
     state = {"resume_data": MOCK_RESUME_DATA, "jd_data": MOCK_JD_DATA, "errors": []}
@@ -266,10 +270,11 @@ def test_scoring_agent_with_jd(mock_gemini):
     assert result["score"]["overall_score"] == 78
     assert result["score"]["label"] == "Good"
     assert result["score"]["breakdown"]["jd_match_score"] == 72
-    print(f"\n  ✅ ScoringAgent (JD-aware): score={result['score']['overall_score']}, label={result['score']['label']}")
+    print(f"\n  ✅ ScoringAgent (JD-aware): score={result['score']['overall_score']}, "
+          f"label={result['score']['label']}")
 
 
-@patch("agents.scoring_agent.call_gemini", return_value={
+@patch("agents.scoring_agent.call_llm", return_value={
     "overall_score": 65,
     "label": "Good",
     "breakdown": {
@@ -284,7 +289,8 @@ def test_scoring_agent_standalone(mock_gemini):
     result = run_scoring_agent(state)
     assert result["score"]["overall_score"] == 65
     assert result["score"]["breakdown"]["jd_match_score"] is None
-    print(f"\n  ✅ ScoringAgent (standalone): score={result['score']['overall_score']}, jd_match=null")
+    print(f"\n  ✅ ScoringAgent (standalone): score={result['score']['overall_score']}, "
+          "jd_match=null")
 
 
 def test_scoring_agent_no_resume_data():
@@ -295,7 +301,7 @@ def test_scoring_agent_no_resume_data():
     print("\n  ✅ ScoringAgent: missing resume_data → error logged, no crash")
 
 
-@patch("agents.gap_agent.call_gemini", return_value=MOCK_GAPS)
+@patch("agents.gap_agent.call_llm", return_value=MOCK_GAPS)
 def test_gap_agent_with_jd(mock_gemini):
     from agents.gap_agent import run_gap_agent
     state = {"resume_data": MOCK_RESUME_DATA, "jd_data": MOCK_JD_DATA, "errors": []}
@@ -305,7 +311,7 @@ def test_gap_agent_with_jd(mock_gemini):
     print(f"\n  ✅ GapAgent (JD-aware): missing={result['gaps']['missing_required_skills']}")
 
 
-@patch("agents.gap_agent.call_gemini", return_value={
+@patch("agents.gap_agent.call_llm", return_value={
     "missing_required_skills": [],
     "missing_preferred_skills": [],
     "experience_gap": "Lack of quantified impact in bullet points",
@@ -319,7 +325,8 @@ def test_gap_agent_standalone(mock_gemini):
     result = run_gap_agent(state)
     assert result["gaps"]["mode"] == "standalone"
     assert len(result["gaps"]["improvement_suggestions"]) >= 2
-    print(f"\n  ✅ GapAgent (standalone): {len(result['gaps']['improvement_suggestions'])} suggestions")
+    n_suggestions = len(result["gaps"]["improvement_suggestions"])
+    print(f"\n  ✅ GapAgent (standalone): {n_suggestions} suggestions")
 
 
 def test_job_matcher_agent_node():
@@ -329,10 +336,12 @@ def test_job_matcher_agent_node():
     assert isinstance(result["job_matches"], list)
     assert len(result["job_matches"]) == 5
     assert result["job_matches"][0]["match_score"] >= result["job_matches"][-1]["match_score"]
-    print(f"\n  ✅ JobMatcher: {len(result['job_matches'])} matches, top={result['job_matches'][0]['title']} ({result['job_matches'][0]['match_score']}%)")
+    top = result["job_matches"][0]
+    print(f"\n  ✅ JobMatcher: {len(result['job_matches'])} matches, "
+          f"top={top['title']} ({top['match_score']}%)")
 
 
-@patch("agents.interview_prep_agent.call_gemini", return_value=MOCK_INTERVIEW_QUESTIONS)
+@patch("agents.interview_prep_agent.call_llm", return_value=MOCK_INTERVIEW_QUESTIONS)
 def test_interview_prep_agent(mock_gemini):
     from agents.interview_prep_agent import run_interview_prep_agent
     state = {
@@ -346,18 +355,19 @@ def test_interview_prep_agent(mock_gemini):
     assert len(iq["behavioral"]) > 0
     assert len(iq["technical"]) > 0
     assert len(iq["tips"]) > 0
-    print(f"\n  ✅ InterviewPrepAgent: {len(iq['behavioral'])} behavioral, {len(iq['technical'])} technical, {len(iq['tips'])} tips")
+    print(f"\n  ✅ InterviewPrepAgent: {len(iq['behavioral'])} behavioral, "
+          f"{len(iq['technical'])} technical, {len(iq['tips'])} tips")
 
 
 # ─────────────────────────────────────────────────────────────
 # 6. Full pipeline mock run (no real LLM)
 # ─────────────────────────────────────────────────────────────
 
-@patch("agents.resume_parser.call_gemini")
-@patch("agents.jd_parser.call_gemini")
-@patch("agents.scoring_agent.call_gemini")
-@patch("agents.gap_agent.call_gemini")
-@patch("agents.interview_prep_agent.call_gemini")
+@patch("agents.resume_parser.call_llm")
+@patch("agents.jd_parser.call_llm")
+@patch("agents.scoring_agent.call_llm")
+@patch("agents.gap_agent.call_llm")
+@patch("agents.interview_prep_agent.call_llm")
 def test_full_pipeline_standalone_mode(mock_iq, mock_gap, mock_score, mock_jd, mock_resume):
     """Run the entire LangGraph pipeline with Gemini mocked — no JD."""
     from orchestrator.graph import pipeline
@@ -408,11 +418,11 @@ def test_full_pipeline_standalone_mode(mock_iq, mock_gap, mock_score, mock_jd, m
           f"jobs={len(result['job_matches'])}, gaps_mode={result['gaps']['mode']}")
 
 
-@patch("agents.resume_parser.call_gemini")
-@patch("agents.jd_parser.call_gemini")
-@patch("agents.scoring_agent.call_gemini")
-@patch("agents.gap_agent.call_gemini")
-@patch("agents.interview_prep_agent.call_gemini")
+@patch("agents.resume_parser.call_llm")
+@patch("agents.jd_parser.call_llm")
+@patch("agents.scoring_agent.call_llm")
+@patch("agents.gap_agent.call_llm")
+@patch("agents.interview_prep_agent.call_llm")
 def test_full_pipeline_jd_aware_mode(mock_iq, mock_gap, mock_score, mock_jd, mock_resume):
     """Run the entire LangGraph pipeline with Gemini mocked — with JD."""
     from orchestrator.graph import pipeline
@@ -441,7 +451,8 @@ def test_full_pipeline_jd_aware_mode(mock_iq, mock_gap, mock_score, mock_jd, moc
     assert result["errors"] == []
 
     print("\n  ✅ Full pipeline (JD-aware): all 5 outputs populated, 0 errors")
-    print(f"     score={result['score']['overall_score']}, jd_match={result['score']['breakdown']['jd_match_score']}, "
+    print(f"     score={result['score']['overall_score']}, "
+          f"jd_match={result['score']['breakdown']['jd_match_score']}, "
           f"missing={result['gaps']['missing_required_skills']}")
 
 
@@ -465,7 +476,8 @@ MOCK_PIPELINE_RESULT = {
     "jd_data": None,
     "score": {"overall_score": 72, "label": "Good",
               "breakdown": {"skills_score": 70, "experience_score": 65,
-                            "education_score": 90, "presentation_score": 65, "jd_match_score": None},
+                            "education_score": 90, "presentation_score": 65,
+                            "jd_match_score": None},
               "summary": "Good resume."},
     "job_matches": [{"id": "job-001", "title": "Backend Software Engineer",
                      "company": "TechCorp", "location": "SF", "type": "Full-time",
@@ -473,7 +485,9 @@ MOCK_PIPELINE_RESULT = {
     "gaps": {"missing_required_skills": [], "missing_preferred_skills": [],
              "experience_gap": "None", "education_gap": "None",
              "improvement_suggestions": ["Quantify impact"], "mode": "standalone"},
-    "interview_questions": {"behavioral": ["Q1"], "technical": ["Q2"], "gap_based": [], "tips": ["T1"]},
+    "interview_questions": {
+        "behavioral": ["Q1"], "technical": ["Q2"], "gap_based": [], "tips": ["T1"],
+    },
     "errors": [],
 }
 
@@ -481,13 +495,14 @@ MOCK_PIPELINE_RESULT = {
 @patch("orchestrator.graph.pipeline.invoke", return_value=MOCK_PIPELINE_RESULT)
 def test_api_analyze_standalone(mock_invoke):
     from fastapi.testclient import TestClient
+
     from main import app
     client = TestClient(app)
 
     docx_bytes = _make_docx_bytes()
     resp = client.post(
         "/api/analyze",
-        files={"resume": ("resume.docx", docx_bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        files={"resume": ("resume.docx", docx_bytes, DOCX_MIME)},
         data={"jd_text": ""},
     )
     assert resp.status_code == 200
@@ -499,7 +514,8 @@ def test_api_analyze_standalone(mock_invoke):
     assert len(data["job_matches"]) == 1
     assert data["gaps"]["mode"] == "standalone"
     assert data["errors"] == []
-    print(f"\n  ✅ POST /api/analyze (standalone): 200 OK, mode=standalone, score={data['score']['overall_score']}")
+    print("\n  ✅ POST /api/analyze (standalone): 200 OK, mode=standalone, "
+          f"score={data['score']['overall_score']}")
 
 
 @patch("orchestrator.graph.pipeline.invoke", return_value={**MOCK_PIPELINE_RESULT,
@@ -510,13 +526,14 @@ def test_api_analyze_standalone(mock_invoke):
 })
 def test_api_analyze_jd_aware(mock_invoke):
     from fastapi.testclient import TestClient
+
     from main import app
     client = TestClient(app)
 
     docx_bytes = _make_docx_bytes()
     resp = client.post(
         "/api/analyze",
-        files={"resume": ("resume.docx", docx_bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        files={"resume": ("resume.docx", docx_bytes, DOCX_MIME)},
         data={"jd_text": "We need a Backend Engineer with Python and Kubernetes."},
     )
     assert resp.status_code == 200
@@ -525,11 +542,13 @@ def test_api_analyze_jd_aware(mock_invoke):
     assert data["jd_data"] is not None
     assert data["score"]["breakdown"]["jd_match_score"] == 72
     assert data["gaps"]["mode"] == "jd_aware"
-    print(f"\n  ✅ POST /api/analyze (JD-aware): 200 OK, mode=jd_aware, jd_match={data['score']['breakdown']['jd_match_score']}")
+    print("\n  ✅ POST /api/analyze (JD-aware): 200 OK, mode=jd_aware, "
+          f"jd_match={data['score']['breakdown']['jd_match_score']}")
 
 
 def test_api_file_too_large():
     from fastapi.testclient import TestClient
+
     from main import app
     client = TestClient(app)
     huge = b"x" * (11 * 1024 * 1024)  # 11 MB
@@ -543,6 +562,7 @@ def test_api_file_too_large():
 
 def test_api_unsupported_file_type():
     from fastapi.testclient import TestClient
+
     from main import app
     client = TestClient(app)
     resp = client.post(
@@ -555,6 +575,7 @@ def test_api_unsupported_file_type():
 
 def test_api_missing_resume():
     from fastapi.testclient import TestClient
+
     from main import app
     client = TestClient(app)
     resp = client.post("/api/analyze", data={"jd_text": "some jd"})

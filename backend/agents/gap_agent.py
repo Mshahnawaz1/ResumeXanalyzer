@@ -30,7 +30,7 @@ Schema (no JD — standalone review):
 from __future__ import annotations
 
 from orchestrator.state import GraphState
-from services.gemini_client import call_gemini
+from services.llm_client import call_llm
 
 _PROMPT_WITH_JD = """\
 You are a senior career coach performing a gap analysis between a resume and a job description.
@@ -47,8 +47,10 @@ Return ONLY a valid JSON object matching this exact schema — no extra keys, no
 }}
 
 Rules:
-- missing_required_skills: list every skill from jd required_skills that is absent from resume skills.
-- missing_preferred_skills: list every skill from jd preferred_skills that is absent from resume skills.
+- missing_required_skills: list every skill from jd required_skills that is absent from
+  resume skills.
+- missing_preferred_skills: list every skill from jd preferred_skills that is absent from
+  resume skills.
 - improvement_suggestions: 4-7 concrete, actionable suggestions to bridge the gaps.
 - Use [] for empty lists. Use "None" string (not null) for no gap.
 
@@ -101,7 +103,7 @@ def run_gap_agent(state: GraphState) -> dict:
         prompt = _PROMPT_NO_JD.format(resume_data=resume_data)
 
     try:
-        gaps = call_gemini(prompt)
+        gaps = call_llm(prompt)
     except Exception as exc:
         return {"errors": [f"GapAgent error: {exc}"], "gaps": None}
 

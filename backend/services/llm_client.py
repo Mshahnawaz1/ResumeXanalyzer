@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
 
 from config import settings
 
@@ -32,7 +31,7 @@ def _get_openrouter_client():
             default_headers={
                 "HTTP-Referer": "https://github.com/Mshahnawaz1/ResumeXanalyzer",
                 "X-Title": "ResumeX Analyzer",
-            }
+            },
         )
     return _openrouter_client
 
@@ -49,7 +48,7 @@ def _call_gemini(prompt: str) -> str:
         contents=prompt,
         config=config,
     )
-    return response.text
+    return response.text or ""
 
 
 def _call_openrouter(prompt: str) -> str:
@@ -79,8 +78,7 @@ def call_llm(prompt: str) -> dict:
     sending back the raw text with an error correction instruction.
     Raises ValueError on a second failure — never returns garbage silently.
     """
-    provider = settings.llm_provider.lower()
-    model = settings.openrouter_model if provider == "openrouter" else settings.gemini_model
+    provider, model = settings.provider, settings.active_model
 
     def _execute(p: str) -> str:
         if provider == "gemini":
@@ -99,7 +97,7 @@ def call_llm(prompt: str) -> dict:
     # 2. Try parsing JSON, retry on failure
     try:
         return _extract_json(raw)
-    except (json.JSONDecodeError, ValueError) as exc:
+    except ValueError:  # includes json.JSONDecodeError
         # --- one retry with correction hint ---
         correction_prompt = (
             f"{prompt}\n\n"
@@ -116,8 +114,9 @@ def call_llm(prompt: str) -> dict:
 
         try:
             return _extract_json(retry_raw)
-        except (json.JSONDecodeError, ValueError) as retry_exc:
+        except ValueError as retry_exc:
             raise ValueError(
-                f"LLM provider '{provider}' (model: {model}) returned unparseable JSON after retry.\n"
+                f"LLM provider '{provider}' (model: {model}) returned unparseable JSON "
+                "after retry.\n"
                 f"Last raw response: {retry_raw}"
             ) from retry_exc

@@ -28,7 +28,7 @@ Behaviour:
 from __future__ import annotations
 
 from orchestrator.state import GraphState
-from services.gemini_client import call_gemini
+from services.llm_client import call_llm
 
 _PROMPT_WITH_JD = """\
 You are a professional resume scoring assistant. Score this resume against the provided
@@ -126,7 +126,7 @@ def run_scoring_agent(state: GraphState) -> dict:
         prompt = _PROMPT_NO_JD.format(resume_data=resume_data)
 
     try:
-        score = call_gemini(prompt)
+        score = call_llm(prompt)
     except Exception as exc:
         return {"errors": [f"ScoringAgent error: {exc}"], "score": None}
 

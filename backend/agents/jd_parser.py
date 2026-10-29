@@ -24,7 +24,7 @@ If jd_text is empty, sets jd_data=None and returns without calling Gemini.
 from __future__ import annotations
 
 from orchestrator.state import GraphState
-from services.gemini_client import call_gemini
+from services.llm_client import call_llm
 
 _PROMPT_TEMPLATE = """\
 You are a job-description parsing assistant. Extract structured data from the job description below.
@@ -44,7 +44,8 @@ Return ONLY a valid JSON object matching this exact schema — no extra keys, no
   "benefits": ["<string>"]
 }}
 
-Use empty string "" for missing scalar fields. Use [] for missing lists. Use null for missing integer.
+Use empty string "" for missing scalar fields. Use [] for missing lists.
+Use null for missing integer.
 Do NOT invent data not present in the text.
 
 JOB DESCRIPTION TEXT:
@@ -54,7 +55,7 @@ JOB DESCRIPTION TEXT:
 
 def run_jd_parser(state: GraphState) -> dict:
     """LangGraph node — parses raw JD text into structured data.
-    
+
     If jd_text is empty, sets jd_data=None gracefully (no error logged).
     Downstream agents handle jd_data=None by switching to standalone mode.
     """
@@ -67,7 +68,7 @@ def run_jd_parser(state: GraphState) -> dict:
     prompt = _PROMPT_TEMPLATE.format(jd_text=jd_text)
 
     try:
-        jd_data = call_gemini(prompt)
+        jd_data = call_llm(prompt)
     except Exception as exc:
         return {"errors": [f"JDParser error: {exc}"], "jd_data": None}
 

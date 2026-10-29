@@ -6,13 +6,11 @@ Run with:  uv run pytest tests/ -v
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import patch
 
-from orchestrator.state import GraphState
-from agents.resume_parser import run_resume_parser
 from agents.jd_parser import run_jd_parser
-
+from agents.resume_parser import run_resume_parser
+from orchestrator.state import GraphState
 
 SAMPLE_RESUME = """
 John Doe
@@ -84,7 +82,7 @@ MOCK_JD_DATA = {
 }
 
 
-@patch("agents.resume_parser.call_gemini", return_value=MOCK_RESUME_DATA)
+@patch("agents.resume_parser.call_llm", return_value=MOCK_RESUME_DATA)
 def test_resume_parser_happy_path(mock_call):
     state: GraphState = {"resume_text": SAMPLE_RESUME, "errors": []}
     result = run_resume_parser(state)
@@ -99,7 +97,7 @@ def test_resume_parser_empty_text():
     assert any("empty" in e for e in result["errors"])
 
 
-@patch("agents.jd_parser.call_gemini", return_value=MOCK_JD_DATA)
+@patch("agents.jd_parser.call_llm", return_value=MOCK_JD_DATA)
 def test_jd_parser_happy_path(mock_call):
     state: GraphState = {"jd_text": SAMPLE_JD, "errors": []}
     result = run_jd_parser(state)

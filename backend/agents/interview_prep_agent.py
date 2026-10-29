@@ -19,7 +19,7 @@ Schema:
 from __future__ import annotations
 
 from orchestrator.state import GraphState
-from services.gemini_client import call_gemini
+from services.llm_client import call_llm
 
 _PROMPT_TEMPLATE = """\
 You are an expert interview coach generating targeted interview preparation material.
@@ -69,7 +69,7 @@ def run_interview_prep_agent(state: GraphState) -> dict:
     )
 
     try:
-        questions = call_gemini(prompt)
+        questions = call_llm(prompt)
     except Exception as exc:
         return {"errors": [f"InterviewPrepAgent error: {exc}"], "interview_questions": None}
 
