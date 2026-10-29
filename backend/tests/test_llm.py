@@ -1,12 +1,17 @@
-""" Test if the providers are working properly, and the APIs are correct
-Run: -s to print
-uv run pytest tests/test_llm.py -s
+"""Test if the providers are working properly, and the APIs are correct.
+Run (-s to print):
+    uv run pytest tests/test_llm.py -m live -s
 """
 
-from services.llm_client import _call_gemini, _call_openrouter
 import pytest
 
+from services.llm_client import _call_gemini, _call_openrouter
+
+pytestmark = pytest.mark.live
+
 PROMPT = "Explain about AI in 20 words."
+
+
 def test_gemini():
     result_gemini = _call_gemini(PROMPT)
 
@@ -23,8 +28,3 @@ def test_openrouter():
     print(f"Openrouter result: {result}")
     assert result is not None
     assert isinstance(result, str)
-            
-
-if __name__ == "__main__":
-    # test_openrouter()
-    pass

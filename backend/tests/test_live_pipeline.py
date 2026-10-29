@@ -1,13 +1,19 @@
 """
 Live Integration Test for the ResumeX Analyzer Pipeline.
 Runs the compiled LangGraph pipeline end-to-end using the live LLM provider.
+
+Run:
+    uv run pytest tests/test_live_pipeline.py -m live -s
 """
 
 from __future__ import annotations
 
 import json
-from orchestrator.graph import pipeline
+
+import pytest
+
 from config import settings
+from orchestrator.graph import pipeline
 
 SAMPLE_RESUME = """
 Jane Doe
@@ -35,6 +41,7 @@ Experience with Docker is a plus.
 """
 
 
+@pytest.mark.live
 def test_live_pipeline():
     print("=" * 60)
     print("  LIVE RESUME PIPELINE INTEGRATION TEST")
