@@ -2379,6 +2379,396 @@ body {
   background: #ffffff;
 }
 
+/* Agent warnings (partial results) */
+.result-warnings {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.result-warnings ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.chat-error-banner.dashboard-error {
+  margin: 24px;
+  max-width: 100%;
+}
+
+.result-spaced {
+  margin-top: 12px;
+}
+
+.muted-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Score summary */
+.result-card {
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.01);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.score-summary {
+  margin-top: 16px;
+}
+
+.result-card-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.result-card-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Resume / JD profiles */
+.profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.profile-card {
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.01);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.profile-card.jd {
+  background: rgba(231, 138, 83, 0.01);
+}
+
+.profile-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-card.jd .profile-card-title {
+  border-bottom-color: rgba(231, 138, 83, 0.15);
+}
+
+.profile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.profile-card.jd .profile-name {
+  color: var(--accent);
+}
+
+.profile-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.profile-section {
+  margin-top: 4px;
+}
+
+.profile-label {
+  font-size: 12px;
+}
+
+.profile-label.block {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.profile-text {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.profile-list {
+  padding-left: 16px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.profile-list li {
+  margin-bottom: 3px;
+}
+
+.profile-list .more {
+  list-style-type: none;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline.tight {
+  gap: 8px;
+}
+
+.timeline-item {
+  font-size: 12px;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.timeline-item.accent {
+  border-left-color: var(--accent);
+}
+
+.timeline-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.timeline-meta {
+  margin: 2px 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.timeline-text {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Skill chips */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: rgba(17, 17, 17, 0.04);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.chip-lg {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.chip-job {
+  font-size: 11px;
+}
+
+.chip-accent {
+  background: rgba(231, 138, 83, 0.08);
+  color: var(--accent);
+}
+
+.chip-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.chip-warning {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.chip-match {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+/* Gaps */
+.gap-ok {
+  margin: 0;
+  padding: 10px 14px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-sm);
+  color: #065f46;
+  font-size: 13px;
+}
+
+.review-box {
+  padding: 14px;
+  background: rgba(17, 17, 17, 0.01);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.review-box.accent {
+  background: rgba(231, 138, 83, 0.03);
+  border-color: rgba(231, 138, 83, 0.2);
+}
+
+.gap-item.positive {
+  background: rgba(16, 185, 129, 0.03);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+.gap-item.positive .gap-bullet {
+  color: #10b981;
+}
+
+/* Detailed job cards */
+.job-card.detailed {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 18px;
+}
+
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.job-card.detailed .job-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.job-card.detailed .job-match-pct {
+  min-width: auto;
+  padding: 6px 12px;
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-border);
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+.job-type {
+  font-weight: 600;
+}
+
+.job-description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.job-skills {
+  margin-top: 4px;
+}
+
+.job-skills .chip-row {
+  margin-top: 0;
+}
+
+.job-skills-label {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Interview prep */
+.tips-card {
+  padding: 16px;
+  margin-bottom: 8px;
+  background: rgba(231, 138, 83, 0.03);
+  border: 1px solid rgba(231, 138, 83, 0.25);
+  border-radius: var(--radius-md);
+}
+
+.tips-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.tips-card ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tips-card li {
+  margin-bottom: 6px;
+}
+
+.question-group {
+  margin-top: 8px;
+}
+
+.question-group + .question-group {
+  margin-top: 16px;
+}
+
+.question-group-title {
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.question-group.gap .question-group-title {
+  color: #b45309;
+}
+
+.question-group.gap .question-item {
+  background: rgba(245, 158, 11, 0.02);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
 /* ── Responsive: Analyze Dashboard ── */
 @media (max-width: 900px) {
   .running-agents-grid {

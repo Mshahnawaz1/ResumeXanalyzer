@@ -125,10 +125,11 @@ interface AnalysisResult {
   mode: 'standalone' | 'jd_aware';
   resume_data: ResumeData | null;
   jd_data: JdData | null;
-  score: ScoreData;
-  job_matches: JobMatch[];
-  gaps: GapsData;
-  interview_questions: InterviewQuestions;
+  // Each agent's output is null when that agent failed — see `errors`
+  score: ScoreData | null;
+  job_matches: JobMatch[] | null;
+  gaps: GapsData | null;
+  interview_questions: InterviewQuestions | null;
   errors: string[];
 }
 
@@ -147,6 +148,56 @@ const SCORE_BARS: { key: keyof ScoreBreakdown; label: string }[] = [
   { key: 'presentation_score', label: 'Presentation' },
   { key: 'jd_match_score',     label: 'JD Alignment' },
 ];
+
+// Matches the extensions the backend's file extraction accepts
+const ACCEPTED_EXTENSIONS = ['.pdf', '.docx'];
+
+const isAcceptedFile = (file: File) =>
+  ACCEPTED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
+
+// LLM output doesn't always honour the schema, so treat missing lists as empty
+const list = <T,>(items?: T[] | null): T[] => items ?? [];
+
+// Gap agent uses the string "None" to mean no gap
+const hasGap = (text?: string | null) => !!text && text !== 'None';
+
+/* ── Result building blocks ──────────────────────────────────────────── */
+
+const ChipList: React.FC<{ items: string[]; className?: string; prefix?: string }> = ({
+  items,
+  className = '',
+  prefix = '',
+}) => (
+  <div className="chip-row">
+    {items.map((item, idx) => (
+      <span key={idx} className={`chip ${className}`}>
+        {prefix}{item}
+      </span>
+    ))}
+  </div>
+);
+
+const AgentUnavailable: React.FC<{ agent: string }> = ({ agent }) => (
+  <p className="empty-result">The {agent} agent didn't return results for this run.</p>
+);
+
+const QuestionGroup: React.FC<{ title: string; items?: string[] | null; variant?: 'gap' }> = ({
+  title,
+  items,
+  variant,
+}) => {
+  if (!items?.length) return null;
+  return (
+    <div className={`question-group ${variant ?? ''}`}>
+      <div className="question-group-title">{title}</div>
+      <ol className="question-list">
+        {items.map((q, i) => (
+          <li key={i} className="question-item">{q}</li>
+        ))}
+      </ol>
+    </div>
+  );
+};
 
 /* ── Component ───────────────────────────────────────────────────────── */
 
@@ -169,8 +220,8 @@ export const AnalyzeDashboard: React.FC = () => {
   /* ── File handling ─────────────────────────────────── */
 
   const handleFileSelect = (file: File) => {
-    if (file.type !== 'application/pdf') {
-      setError('Only PDF files are supported at this time.');
+    if (!isAcceptedFile(file)) {
+      setError('Only PDF and DOCX files are supported.');
       return;
     }
     setError(null);
@@ -253,9 +304,15 @@ export const AnalyzeDashboard: React.FC = () => {
 
       const data: AnalysisResult = await res.json();
 
-      // Update all agents to done
+      // Mark each agent by whether it actually produced output
+      const outputs: Record<string, unknown> = {
+        scorer: data.score,
+        detector: data.gaps,
+        matcher: data.job_matches,
+        coach: data.interview_questions,
+      };
       progressKeys.forEach(k => {
-        updateAgent(k, { status: 'done' });
+        updateAgent(k, { status: outputs[k] ? 'done' : 'error' });
       });
 
       setResult(data);
@@ -284,6 +341,18 @@ export const AnalyzeDashboard: React.FC = () => {
 
   const completedCount = Object.values(agents).filter(a => a.status === 'done').length;
 
+  const score = result?.score ?? null;
+  const gaps = result?.gaps ?? null;
+  const questions = result?.interview_questions ?? null;
+  const jobMatches = list(result?.job_matches);
+  const resumeData = result?.resume_data ?? null;
+  const jdData = result?.mode === 'jd_aware' ? result.jd_data : null;
+  const warnings = list(result?.errors);
+  const flaggedCount =
+    list(gaps?.missing_required_skills).length + list(gaps?.missing_preferred_skills).length;
+  const questionCount = list(questions?.behavioral).length + list(questions?.technical).length;
+  const candidateSkills = new Set(list(resumeData?.skills).map(s => s.toLowerCase()));
+
   /* ── Render ────────────────────────────────────────── */
 
   return (
@@ -294,7 +363,7 @@ export const AnalyzeDashboard: React.FC = () => {
         {/* ── Left Sidebar: Inputs + Agent progress ── */}
         <aside className="sidebar">
           <div className="sidebar-section">
-            <span className="sidebar-sec-title">Resume (PDF)</span>
+            <span className="sidebar-sec-title">Resume (PDF or DOCX)</span>
 
             {/* Drop zone */}
             <div
@@ -308,7 +377,7 @@ export const AnalyzeDashboard: React.FC = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf"
+                accept={ACCEPTED_EXTENSIONS.join(',')}
                 className="upload-hidden-input"
                 onChange={onFileInputChange}
                 id="resume-file-input"
@@ -340,7 +409,7 @@ export const AnalyzeDashboard: React.FC = () => {
                   <div className="upload-prompt-icon">
                     <UploadIcon />
                   </div>
-                  <span className="upload-prompt-text">Drop your PDF here</span>
+                  <span className="upload-prompt-text">Drop your resume here</span>
                   <span className="upload-prompt-sub">or click to browse</span>
                 </div>
               )}
@@ -501,7 +570,7 @@ export const AnalyzeDashboard: React.FC = () => {
 
             {/* Error state */}
             {error && (
-              <div className="chat-error-banner animate-fade-in" style={{ margin: '24px', maxWidth: '100%' }}>
+              <div className="chat-error-banner dashboard-error animate-fade-in">
                 <svg className="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="12" y1="8" x2="12" y2="12"/>
@@ -514,28 +583,41 @@ export const AnalyzeDashboard: React.FC = () => {
             {/* Results */}
             {result && !isRunning && (
               <div className="results-view animate-fade-in">
+                {warnings.length > 0 && (
+                  <div className="result-warnings" role="status">
+                    <strong>Some agents reported problems — results may be incomplete.</strong>
+                    <ul>
+                      {warnings.map((msg, i) => (
+                        <li key={i}>{msg}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Score hero */}
                 <div className="score-hero">
                   <div className="score-ring">
                     <svg viewBox="0 0 100 100" className="score-ring-svg">
                       <circle cx="50" cy="50" r="42" className="ring-track" />
-                      <circle
-                        cx="50" cy="50" r="42"
-                        className="ring-fill"
-                        strokeDasharray={`${(result.score.overall_score / 100) * 263.9} 263.9`}
-                        transform="rotate(-90 50 50)"
-                      />
+                      {score && (
+                        <circle
+                          cx="50" cy="50" r="42"
+                          className="ring-fill"
+                          strokeDasharray={`${(score.overall_score / 100) * 263.9} 263.9`}
+                          transform="rotate(-90 50 50)"
+                        />
+                      )}
                     </svg>
                     <div className="score-value">
-                      <span className="score-number">{result.score.overall_score}</span>
+                      <span className="score-number">{score ? score.overall_score : '–'}</span>
                       <span className="score-100">/100</span>
                     </div>
                   </div>
                   <div className="score-meta">
-                    <h2 className="score-label">{result.score.label} Match Rating</h2>
+                    <h2 className="score-label">{score ? `${score.label} Match Rating` : 'Score unavailable'}</h2>
                     <p className="score-desc">
                       {result.mode === 'jd_aware' ? 'Job description analyzed · ' : 'Standalone resume evaluation · '}
-                      {result.gaps.missing_required_skills.length + result.gaps.missing_preferred_skills.length} skills flagged · {result.job_matches.length} jobs matched · {result.interview_questions.behavioral.length + result.interview_questions.technical.length} questions coached
+                      {flaggedCount} skills flagged · {jobMatches.length} jobs matched · {questionCount} questions coached
                     </p>
                   </div>
                 </div>
@@ -550,9 +632,9 @@ export const AnalyzeDashboard: React.FC = () => {
                       onClick={() => setActiveResultTab(tab)}
                     >
                       {tab === 'score'     && '📊 Score & Profiles'}
-                      {tab === 'gaps'      && `🔍 Gaps & Suggestions`}
-                      {tab === 'jobs'      && `💼 Job Matches (${result.job_matches.length})`}
-                      {tab === 'questions' && `🎙️ Interview Coach`}
+                      {tab === 'gaps'      && '🔍 Gaps & Suggestions'}
+                      {tab === 'jobs'      && `💼 Job Matches (${jobMatches.length})`}
+                      {tab === 'questions' && '🎙️ Interview Coach'}
                     </button>
                   ))}
                 </div>
@@ -563,97 +645,88 @@ export const AnalyzeDashboard: React.FC = () => {
                   {activeResultTab === 'score' && (
                     <div className="tab-panel animate-fade-in">
                       <div className="result-section-title">Resume Fit Breakdown</div>
-                      <div className="score-breakdown">
-                        {SCORE_BARS.map(({ key, label }) => {
-                          const value = result.score.breakdown[key];
-                          if (value === null || (key === 'jd_match_score' && result.mode !== 'jd_aware')) return null;
-                          return (
-                            <div key={key} className="score-bar-row">
-                              <span>{label}</span>
-                              <div className="score-bar-track">
-                                <div className="score-bar-fill" style={{ width: `${value}%` }}></div>
+                      {score ? (
+                        <div className="score-breakdown">
+                          {SCORE_BARS.map(({ key, label }) => {
+                            const value = score.breakdown?.[key];
+                            if (value == null || (key === 'jd_match_score' && result.mode !== 'jd_aware')) return null;
+                            return (
+                              <div key={key} className="score-bar-row">
+                                <span>{label}</span>
+                                <div className="score-bar-track">
+                                  <div className="score-bar-fill" style={{ width: `${value}%` }}></div>
+                                </div>
+                                <span className="score-bar-pct">{value}%</span>
                               </div>
-                              <span className="score-bar-pct">{value}%</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <AgentUnavailable agent="Resume Scorer" />
+                      )}
 
-                      {result.score.summary && (
-                        <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(17, 17, 17, 0.01)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                          <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>Summary Evaluation</div>
-                          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>{result.score.summary}</p>
+                      {score?.summary && (
+                        <div className="result-card score-summary">
+                          <div className="result-card-title">Summary Evaluation</div>
+                          <p className="result-card-text">{score.summary}</p>
                         </div>
                       )}
 
-                      {/* Profiles Side-by-Side/Grid */}
-                      <div className="profiles-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginTop: '24px' }}>
+                      <div className="profiles-grid">
                         {/* Extracted Resume Profile */}
-                        <div className="profile-card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'rgba(17, 17, 17, 0.01)' }}>
-                          <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '8px', color: 'var(--text-primary)' }}>
-                            👤 Extracted Resume Profile
-                          </h3>
-                          {result.resume_data ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div className="profile-card">
+                          <h3 className="profile-card-title">👤 Extracted Resume Profile</h3>
+                          {resumeData ? (
+                            <div className="profile-stack">
                               <div>
-                                <span style={{ fontWeight: 700, fontSize: '15px' }}>{result.resume_data.name || 'Candidate Name'}</span>
-                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  {result.resume_data.email && <span>📧 {result.resume_data.email}</span>}
-                                  {result.resume_data.phone && <span>📞 {result.resume_data.phone}</span>}
-                                  {result.resume_data.location && <span>📍 {result.resume_data.location}</span>}
+                                <span className="profile-name">{resumeData.name || 'Candidate Name'}</span>
+                                <div className="profile-contact">
+                                  {resumeData.email && <span>📧 {resumeData.email}</span>}
+                                  {resumeData.phone && <span>📞 {resumeData.phone}</span>}
+                                  {resumeData.location && <span>📍 {resumeData.location}</span>}
                                 </div>
                               </div>
 
-                              {result.resume_data.summary && (
+                              {resumeData.summary && (
                                 <div>
-                                  <strong style={{ fontSize: '12px' }}>Summary:</strong>
-                                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: '1.4', margin: 0 }}>{result.resume_data.summary}</p>
+                                  <strong className="profile-label">Summary:</strong>
+                                  <p className="profile-text">{resumeData.summary}</p>
                                 </div>
                               )}
 
-                              {result.resume_data.skills && result.resume_data.skills.length > 0 && (
+                              {list(resumeData.skills).length > 0 && (
                                 <div>
-                                  <strong style={{ fontSize: '12px' }}>Skills:</strong>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                                    {result.resume_data.skills.map((skill, idx) => (
-                                      <span key={idx} style={{ fontSize: '10.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '12px', background: 'rgba(17, 17, 17, 0.04)', color: 'var(--text-secondary)' }}>
-                                        {skill}
-                                      </span>
-                                    ))}
-                                  </div>
+                                  <strong className="profile-label">Skills:</strong>
+                                  <ChipList items={resumeData.skills} />
                                 </div>
                               )}
-                              
-                              {/* Experience timeline */}
-                              {result.resume_data.experience && result.resume_data.experience.length > 0 && (
-                                <div style={{ marginTop: '4px' }}>
-                                  <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px' }}>Work Experience:</strong>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    {result.resume_data.experience.map((exp, idx) => (
-                                      <div key={idx} style={{ fontSize: '12px', borderLeft: '2px solid var(--accent)', paddingLeft: '10px' }}>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{exp.title}</div>
-                                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px', margin: '2px 0' }}>
+
+                              {list(resumeData.experience).length > 0 && (
+                                <div className="profile-section">
+                                  <strong className="profile-label block">Work Experience:</strong>
+                                  <div className="timeline">
+                                    {resumeData.experience.map((exp, idx) => (
+                                      <div key={idx} className="timeline-item accent">
+                                        <div className="timeline-title">{exp.title}</div>
+                                        <div className="timeline-meta">
                                           {exp.company && `${exp.company} `}
                                           {(exp.start_date || exp.end_date) && `· (${exp.start_date || ''} - ${exp.end_date || ''})`}
                                         </div>
-                                        {exp.description && (
-                                          <p style={{ marginTop: '4px', color: 'var(--text-secondary)', lineHeight: '1.4', fontSize: '11.5px', margin: 0 }}>{exp.description}</p>
-                                        )}
+                                        {exp.description && <p className="timeline-text">{exp.description}</p>}
                                       </div>
                                     ))}
                                   </div>
                                 </div>
                               )}
-                              
-                              {/* Education Timeline */}
-                              {result.resume_data.education && result.resume_data.education.length > 0 && (
-                                <div style={{ marginTop: '4px' }}>
-                                  <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px' }}>Education:</strong>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {result.resume_data.education.map((edu, idx) => (
-                                      <div key={idx} style={{ fontSize: '12px', borderLeft: '2px solid var(--border)', paddingLeft: '10px' }}>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{edu.degree}{edu.field && ` in ${edu.field}`}</div>
-                                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+
+                              {list(resumeData.education).length > 0 && (
+                                <div className="profile-section">
+                                  <strong className="profile-label block">Education:</strong>
+                                  <div className="timeline tight">
+                                    {resumeData.education.map((edu, idx) => (
+                                      <div key={idx} className="timeline-item">
+                                        <div className="timeline-title">{edu.degree}{edu.field && ` in ${edu.field}`}</div>
+                                        <div className="timeline-meta">
                                           {edu.institution} {edu.graduation_year && `(${edu.graduation_year})`}
                                         </div>
                                       </div>
@@ -662,81 +735,68 @@ export const AnalyzeDashboard: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Certifications */}
-                              {result.resume_data.certifications && result.resume_data.certifications.length > 0 && (
-                                <div style={{ marginTop: '4px' }}>
-                                  <strong style={{ fontSize: '12px' }}>Certifications:</strong>
-                                  <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                                    {result.resume_data.certifications.map((cert, idx) => (
-                                      <li key={idx} style={{ marginBottom: '3px' }}>{cert}</li>
+                              {list(resumeData.certifications).length > 0 && (
+                                <div className="profile-section">
+                                  <strong className="profile-label">Certifications:</strong>
+                                  <ul className="profile-list">
+                                    {resumeData.certifications.map((cert, idx) => (
+                                      <li key={idx}>{cert}</li>
                                     ))}
                                   </ul>
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>No profile data extracted.</p>
+                            <p className="muted-text">No profile data extracted.</p>
                           )}
                         </div>
 
                         {/* Target Job Profile (if jd_aware) */}
-                        {result.mode === 'jd_aware' && result.jd_data && (
-                          <div className="profile-card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'rgba(231, 138, 83, 0.01)' }}>
-                            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px', borderBottom: '1px solid rgba(231, 138, 83, 0.15)', paddingBottom: '8px', color: 'var(--text-primary)' }}>
-                              💼 Target Job Description
-                            </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {jdData && (
+                          <div className="profile-card jd">
+                            <h3 className="profile-card-title">💼 Target Job Description</h3>
+                            <div className="profile-stack">
                               <div>
-                                <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--accent)' }}>{result.jd_data.job_title}</span>
-                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                                  {result.jd_data.company} {result.jd_data.location && `· ${result.jd_data.location}`}
-                                  {result.jd_data.employment_type && ` (${result.jd_data.employment_type})`}
+                                <span className="profile-name">{jdData.job_title}</span>
+                                <div className="profile-contact">
+                                  <span>
+                                    {jdData.company} {jdData.location && `· ${jdData.location}`}
+                                    {jdData.employment_type && ` (${jdData.employment_type})`}
+                                  </span>
                                 </div>
                               </div>
 
-                              {result.jd_data.required_skills && result.jd_data.required_skills.length > 0 && (
+                              {list(jdData.required_skills).length > 0 && (
                                 <div>
-                                  <strong style={{ fontSize: '12px' }}>Required Skills:</strong>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                                    {result.jd_data.required_skills.map((skill, idx) => (
-                                      <span key={idx} style={{ fontSize: '10.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '12px', background: 'rgba(231, 138, 83, 0.08)', color: 'var(--accent)' }}>
-                                        {skill}
-                                      </span>
-                                    ))}
-                                  </div>
+                                  <strong className="profile-label">Required Skills:</strong>
+                                  <ChipList items={jdData.required_skills} className="chip-accent" />
                                 </div>
                               )}
 
-                              {result.jd_data.preferred_skills && result.jd_data.preferred_skills.length > 0 && (
+                              {list(jdData.preferred_skills).length > 0 && (
                                 <div>
-                                  <strong style={{ fontSize: '12px' }}>Preferred Skills:</strong>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                                    {result.jd_data.preferred_skills.map((skill, idx) => (
-                                      <span key={idx} style={{ fontSize: '10.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '12px', background: 'rgba(17, 17, 17, 0.04)', color: 'var(--text-secondary)' }}>
-                                        {skill}
-                                      </span>
-                                    ))}
-                                  </div>
+                                  <strong className="profile-label">Preferred Skills:</strong>
+                                  <ChipList items={jdData.preferred_skills} />
                                 </div>
                               )}
 
-                              {result.jd_data.required_education && (
+                              {jdData.required_education && (
                                 <div>
-                                  <strong style={{ fontSize: '12px' }}>Education Requirement:</strong>
-                                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', margin: 0 }}>{result.jd_data.required_education}</p>
+                                  <strong className="profile-label">Education Requirement:</strong>
+                                  <p className="profile-text">{jdData.required_education}</p>
                                 </div>
                               )}
 
-                              {result.jd_data.responsibilities && result.jd_data.responsibilities.length > 0 && (
+                              {list(jdData.responsibilities).length > 0 && (
                                 <div>
-                                  <strong style={{ fontSize: '12px' }}>Key Responsibilities:</strong>
-                                  <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                                    {result.jd_data.responsibilities.slice(0, 4).map((resp, idx) => (
-                                      <li key={idx} style={{ marginBottom: '3px' }}>{resp}</li>
+                                  <strong className="profile-label">Key Responsibilities:</strong>
+                                  <ul className="profile-list">
+                                    {jdData.responsibilities.slice(0, 4).map((resp, idx) => (
+                                      <li key={idx}>{resp}</li>
                                     ))}
-                                    {result.jd_data.responsibilities.length > 4 && (
-                                      <li style={{ listStyleType: 'none', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '11px' }}>
-                                        + {result.jd_data.responsibilities.length - 4} more responsibilities
+                                    {jdData.responsibilities.length > 4 && (
+                                      <li className="more">
+                                        + {jdData.responsibilities.length - 4} more responsibilities
                                       </li>
                                     )}
                                   </ul>
@@ -752,100 +812,81 @@ export const AnalyzeDashboard: React.FC = () => {
                   {/* TAB 2: GAPS & SUGGESTIONS */}
                   {activeResultTab === 'gaps' && (
                     <div className="tab-panel animate-fade-in">
-                      {result.mode === 'jd_aware' ? (
-                        <>
-                          {/* Missing Required Skills */}
-                          <div>
-                            <div className="result-section-title">Missing Required Skills</div>
-                            {result.gaps.missing_required_skills.length === 0 ? (
-                              <p style={{ fontSize: '13px', color: '#065f46', background: 'rgba(16, 185, 129, 0.06)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.2)', margin: 0 }}>
-                                ✓ Excellent! You have all the required skills listed in the job description.
-                              </p>
-                            ) : (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                                {result.gaps.missing_required_skills.map((skill, idx) => (
-                                  <span key={idx} style={{ fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-                                    ⚠️ {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Missing Preferred Skills */}
-                          <div style={{ marginTop: '12px' }}>
-                            <div className="result-section-title">Missing Preferred Skills</div>
-                            {result.gaps.missing_preferred_skills.length === 0 ? (
-                              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>No preferred skills missing.</p>
-                            ) : (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                                {result.gaps.missing_preferred_skills.map((skill, idx) => (
-                                  <span key={idx} style={{ fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.06)', color: '#b45309', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Experience Gap */}
-                          {result.gaps.experience_gap && result.gaps.experience_gap !== "None" && (
-                            <div style={{ marginTop: '12px' }}>
-                              <div className="result-section-title">Experience Fit Review</div>
-                              <div style={{ padding: '14px', border: '1px solid rgba(231, 138, 83, 0.2)', background: 'rgba(231, 138, 83, 0.03)', borderRadius: 'var(--radius-sm)', fontSize: '13px', lineHeight: '1.5', color: 'var(--text-primary)' }}>
-                                {result.gaps.experience_gap}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Education Gap */}
-                          {result.gaps.education_gap && result.gaps.education_gap !== "None" && (
-                            <div style={{ marginTop: '12px' }}>
-                              <div className="result-section-title">Education Fit Review</div>
-                              <div style={{ padding: '14px', border: '1px solid var(--border)', background: 'rgba(17, 17, 17, 0.01)', borderRadius: 'var(--radius-sm)', fontSize: '13px', lineHeight: '1.5', color: 'var(--text-primary)' }}>
-                                {result.gaps.education_gap}
-                              </div>
-                            </div>
-                          )}
-                        </>
+                      {!gaps ? (
+                        <AgentUnavailable agent="Gap Detector" />
                       ) : (
                         <>
-                          {/* Standalone gap items */}
-                          {result.gaps.experience_gap && (
-                            <div>
-                              <div className="result-section-title">Experience & Work History Check</div>
-                              <div style={{ padding: '14px', border: '1px solid var(--border)', background: 'rgba(17, 17, 17, 0.01)', borderRadius: 'var(--radius-sm)', fontSize: '13px', lineHeight: '1.5', color: 'var(--text-primary)' }}>
-                                {result.gaps.experience_gap}
+                          {result.mode === 'jd_aware' ? (
+                            <>
+                              <div>
+                                <div className="result-section-title">Missing Required Skills</div>
+                                {list(gaps.missing_required_skills).length === 0 ? (
+                                  <p className="gap-ok">
+                                    ✓ Excellent! You have all the required skills listed in the job description.
+                                  </p>
+                                ) : (
+                                  <ChipList items={gaps.missing_required_skills} className="chip-lg chip-danger" prefix="⚠️ " />
+                                )}
                               </div>
-                            </div>
-                          )}
-                          {result.gaps.education_gap && (
-                            <div style={{ marginTop: '12px' }}>
-                              <div className="result-section-title">Education & Profile Check</div>
-                              <div style={{ padding: '14px', border: '1px solid var(--border)', background: 'rgba(17, 17, 17, 0.01)', borderRadius: 'var(--radius-sm)', fontSize: '13px', lineHeight: '1.5', color: 'var(--text-primary)' }}>
-                                {result.gaps.education_gap}
+
+                              <div className="result-spaced">
+                                <div className="result-section-title">Missing Preferred Skills</div>
+                                {list(gaps.missing_preferred_skills).length === 0 ? (
+                                  <p className="muted-text">No preferred skills missing.</p>
+                                ) : (
+                                  <ChipList items={gaps.missing_preferred_skills} className="chip-lg chip-warning" />
+                                )}
                               </div>
-                            </div>
+
+                              {hasGap(gaps.experience_gap) && (
+                                <div className="result-spaced">
+                                  <div className="result-section-title">Experience Fit Review</div>
+                                  <div className="review-box accent">{gaps.experience_gap}</div>
+                                </div>
+                              )}
+
+                              {hasGap(gaps.education_gap) && (
+                                <div className="result-spaced">
+                                  <div className="result-section-title">Education Fit Review</div>
+                                  <div className="review-box">{gaps.education_gap}</div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {hasGap(gaps.experience_gap) && (
+                                <div>
+                                  <div className="result-section-title">Experience & Work History Check</div>
+                                  <div className="review-box">{gaps.experience_gap}</div>
+                                </div>
+                              )}
+                              {hasGap(gaps.education_gap) && (
+                                <div className="result-spaced">
+                                  <div className="result-section-title">Education & Profile Check</div>
+                                  <div className="review-box">{gaps.education_gap}</div>
+                                </div>
+                              )}
+                            </>
                           )}
+
+                          {/* Actionable Suggestions */}
+                          <div className="result-spaced">
+                            <div className="result-section-title">Actionable Resume Improvement Suggestions</div>
+                            {list(gaps.improvement_suggestions).length === 0 ? (
+                              <p className="empty-result">No suggestions needed — your resume is highly optimized!</p>
+                            ) : (
+                              <ul className="gap-list">
+                                {gaps.improvement_suggestions.map((suggestion, i) => (
+                                  <li key={i} className="gap-item positive">
+                                    <span className="gap-bullet">✓</span>
+                                    {suggestion}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         </>
                       )}
-
-                      {/* Actionable Suggestions */}
-                      <div style={{ marginTop: '12px' }}>
-                        <div className="result-section-title">Actionable Resume Improvement Suggestions</div>
-                        {result.gaps.improvement_suggestions.length === 0 ? (
-                          <p className="empty-result">No suggestions needed — your resume is highly optimized!</p>
-                        ) : (
-                          <ul className="gap-list">
-                            {result.gaps.improvement_suggestions.map((suggestion, i) => (
-                              <li key={i} className="gap-item" style={{ background: 'rgba(16, 185, 129, 0.03)', borderColor: 'rgba(16, 185, 129, 0.15)' }}>
-                                <span className="gap-bullet" style={{ color: '#10b981' }}>✓</span>
-                                {suggestion}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
                     </div>
                   )}
 
@@ -853,62 +894,42 @@ export const AnalyzeDashboard: React.FC = () => {
                   {activeResultTab === 'jobs' && (
                     <div className="tab-panel animate-fade-in">
                       <div className="result-section-title">Job Matches (Ranked by Alignment)</div>
-                      {result.job_matches.length === 0 ? (
+                      {jobMatches.length === 0 ? (
                         <p className="empty-result">No matching job postings found for this analysis.</p>
                       ) : (
                         <div className="job-list">
-                          {result.job_matches.map((job, i) => {
-                            // Highlight skills that candidate already has
-                            const candidateSkills = new Set((result.resume_data?.skills || []).map(s => s.toLowerCase()));
-                            
-                            return (
-                              <div key={i} className="job-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', padding: '18px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                                  <div className="job-info">
-                                    <div className="job-title" style={{ fontSize: '15px', fontWeight: 700 }}>{job.title}</div>
-                                    <div className="job-meta">{job.company} · {job.location} · <span style={{ fontWeight: 600 }}>{job.type}</span></div>
-                                  </div>
-                                  <div className="job-match-pct" style={{ padding: '6px 12px', background: 'var(--accent-glow)', borderRadius: '16px', fontSize: '13px', minWidth: 'auto', border: '1px solid var(--accent-border)' }}>
-                                    {job.match_score.toFixed(0)}% Match
+                          {jobMatches.map(job => (
+                            <div key={job.id} className="job-card detailed">
+                              <div className="job-card-header">
+                                <div className="job-info">
+                                  <div className="job-title">{job.title}</div>
+                                  <div className="job-meta">
+                                    {job.company} · {job.location} · <span className="job-type">{job.type}</span>
                                   </div>
                                 </div>
-                                
-                                {job.description && (
-                                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: 0 }}>{job.description}</p>
-                                )}
-                                
-                                {job.skills && job.skills.length > 0 && (
-                                  <div style={{ marginTop: '4px' }}>
-                                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', letterSpacing: '0.05em' }}>KEY SKILLS REQUIRED:</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                      {job.skills.map((skill, idx) => {
-                                        const isMatch = candidateSkills.has(skill.toLowerCase());
-                                        return (
-                                          <span 
-                                            key={idx} 
-                                            style={{ 
-                                              fontSize: '11px', 
-                                              fontWeight: 600, 
-                                              padding: '3px 8px', 
-                                              borderRadius: '12px', 
-                                              background: isMatch ? 'rgba(16, 185, 129, 0.08)' : 'rgba(17, 17, 17, 0.04)', 
-                                              color: isMatch ? '#047857' : 'var(--text-secondary)',
-                                              border: isMatch ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid transparent',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px'
-                                            }}
-                                          >
-                                            {isMatch && '✓'} {skill}
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
+                                <div className="job-match-pct">{job.match_score.toFixed(0)}% Match</div>
                               </div>
-                            );
-                          })}
+
+                              {job.description && <p className="job-description">{job.description}</p>}
+
+                              {list(job.skills).length > 0 && (
+                                <div className="job-skills">
+                                  <div className="job-skills-label">KEY SKILLS REQUIRED:</div>
+                                  <div className="chip-row">
+                                    {job.skills.map((skill, idx) => {
+                                      // Highlight skills the candidate already has
+                                      const isMatch = candidateSkills.has(skill.toLowerCase());
+                                      return (
+                                        <span key={idx} className={`chip chip-job ${isMatch ? 'chip-match' : ''}`}>
+                                          {isMatch && '✓'} {skill}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -918,61 +939,37 @@ export const AnalyzeDashboard: React.FC = () => {
                   {activeResultTab === 'questions' && (
                     <div className="tab-panel animate-fade-in">
                       <div className="result-section-title">Coached Interview Practice</div>
-                      
-                      {/* Tips card */}
-                      {result.interview_questions.tips && result.interview_questions.tips.length > 0 && (
-                        <div style={{ padding: '16px', border: '1px solid rgba(231, 138, 83, 0.25)', background: 'rgba(231, 138, 83, 0.03)', borderRadius: 'var(--radius-md)', marginBottom: '8px' }}>
-                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            💡 Interview Strategy & Preparation Tips
-                          </div>
-                          <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                            {result.interview_questions.tips.map((tip, idx) => (
-                              <li key={idx} style={{ marginBottom: '6px' }}>{tip}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {!questions ? (
+                        <AgentUnavailable agent="Interview Coach" />
+                      ) : (
+                        <>
+                          {list(questions.tips).length > 0 && (
+                            <div className="tips-card">
+                              <div className="tips-card-title">💡 Interview Strategy & Preparation Tips</div>
+                              <ul>
+                                {questions.tips.map((tip, idx) => (
+                                  <li key={idx}>{tip}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
 
-                      {/* Behavioral questions */}
-                      {result.interview_questions.behavioral && result.interview_questions.behavioral.length > 0 && (
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)', marginBottom: '8px', marginTop: '8px' }}>
-                            🤝 Behavioral Questions (Practice STAR Method responses)
-                          </div>
-                          <ol className="question-list">
-                            {result.interview_questions.behavioral.map((q, i) => (
-                              <li key={i} className="question-item">{q}</li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
-
-                      {/* Technical questions */}
-                      {result.interview_questions.technical && result.interview_questions.technical.length > 0 && (
-                        <div style={{ marginTop: '16px' }}>
-                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                            💻 Technical & Domain Knowledge Questions
-                          </div>
-                          <ol className="question-list">
-                            {result.interview_questions.technical.map((q, i) => (
-                              <li key={i} className="question-item">{q}</li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
-
-                      {/* Gap-based questions (only in jd_aware mode) */}
-                      {result.mode === 'jd_aware' && result.interview_questions.gap_based && result.interview_questions.gap_based.length > 0 && (
-                        <div style={{ marginTop: '16px' }}>
-                          <div style={{ fontWeight: 700, fontSize: '13px', color: '#b45309', marginBottom: '8px' }}>
-                            🔍 Skill-Gap & Resume-Specific Questions
-                          </div>
-                          <ol className="question-list">
-                            {result.interview_questions.gap_based.map((q, i) => (
-                              <li key={i} className="question-item" style={{ borderColor: 'rgba(245, 158, 11, 0.2)', background: 'rgba(245, 158, 11, 0.02)' }}>{q}</li>
-                            ))}
-                          </ol>
-                        </div>
+                          <QuestionGroup
+                            title="🤝 Behavioral Questions (Practice STAR Method responses)"
+                            items={questions.behavioral}
+                          />
+                          <QuestionGroup
+                            title="💻 Technical & Domain Knowledge Questions"
+                            items={questions.technical}
+                          />
+                          {result.mode === 'jd_aware' && (
+                            <QuestionGroup
+                              title="🔍 Skill-Gap & Resume-Specific Questions"
+                              items={questions.gap_based}
+                              variant="gap"
+                            />
+                          )}
+                        </>
                       )}
                     </div>
                   )}
