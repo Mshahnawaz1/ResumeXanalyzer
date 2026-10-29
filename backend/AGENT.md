@@ -1,8 +1,6 @@
 # .agent.md — Project Tracker
 
-This file exists to give any coding agent (Antigravity, Claude Code, etc.) working on
-this repo fast context without re-reading the full history. Update it at the end of
-every work session — treat stale entries here as worse than no entries.
+This file exists to give any coding agent (Antigravity, Claude Code, etc.) working on this repo fast context without re-reading the full history. Update it at the end of every work session — treat stale entries here as worse than no entries.
 
 **Read order for a new agent session:** this file first, then `AGENTS.md` (full agent
 specs/schemas/prompts) and `design.md` (frontend design system) as needed for the task

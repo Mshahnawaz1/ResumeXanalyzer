@@ -1,113 +1,74 @@
 """
-Smoke tests for the Day 1 pipeline.
+End-to-end LangGraph pipeline tests. Agent-level behaviour is covered in tests/agents/.
 
-Run with:  uv run pytest tests/ -v
+Run:
+uv run pytest tests/test_pipeline.py -s
+Live (real LLM, needs API keys):
+uv run pytest tests/test_pipeline.py -s -m live
 """
 
-from __future__ import annotations
-
+import json
 from unittest.mock import patch
 
-from agents.jd_parser import run_jd_parser
-from agents.resume_parser import run_resume_parser
-from orchestrator.state import GraphState
+import pytest
 
-SAMPLE_RESUME = """
-John Doe
-john@example.com | +1-555-0100 | San Francisco, CA
+from orchestrator.graph import pipeline
+from tests.conftest import MOCK_GAPS, MOCK_JD_DATA, MOCK_RESUME_DATA
 
-SUMMARY
-Senior software engineer with 8 years building distributed systems.
+MOCK_SCORE = {"overall_score": 78, "breakdown": {}, "summary": "Good."}
+MOCK_QUESTIONS = {"behavioral": ["Q1"], "technical": ["Q2"], "gap_based": [], "tips": ["T1"]}
 
-SKILLS
-Python, Go, Kubernetes, PostgreSQL, Redis
-
-EXPERIENCE
-Acme Corp — Senior Engineer (2019 – Present)
-  Led migration of monolith to microservices; reduced p99 latency by 40%.
-
-TechStartup — Engineer (2016 – 2019)
-  Built real-time data pipeline processing 1M events/day.
-
-EDUCATION
-B.S. Computer Science — Stanford University, 2016
-
-CERTIFICATIONS
-AWS Certified Solutions Architect
+SAMPLE_RESUME = """\
+Jane Doe — jane.doe@example.com — Austin, TX
+Software Engineer, 4 years building Python and FastAPI backends.
+Skills: Python, FastAPI, SQL, Docker, Git
+CloudTech — Software Engineer (2022 – Present): REST APIs with FastAPI and PostgreSQL.
+B.S. Computer Science — University of Texas, 2022
 """
 
-SAMPLE_JD = """
-Role: Backend Engineer
-Company: Widgets Inc.
-Location: Remote
-Type: Full-time
-
-We need a backend engineer with 5+ years of Python and cloud experience.
-
-Required Skills: Python, REST APIs, SQL, Docker
-Preferred Skills: Kubernetes, Go, Redis
-
-Responsibilities:
-- Design and build scalable APIs
-- Maintain CI/CD pipelines
-- Code reviews
-
-Benefits: Health, 401k, Remote-first
-"""
-
-MOCK_RESUME_DATA = {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "phone": "+1-555-0100",
-    "location": "San Francisco, CA",
-    "summary": "Senior software engineer with 8 years building distributed systems.",
-    "skills": ["Python", "Go", "Kubernetes", "PostgreSQL", "Redis"],
-    "experience": [],
-    "education": [],
-    "certifications": ["AWS Certified Solutions Architect"],
-    "languages": [],
-}
-
-MOCK_JD_DATA = {
-    "job_title": "Backend Engineer",
-    "company": "Widgets Inc.",
-    "location": "Remote",
-    "employment_type": "Full-time",
-    "required_skills": ["Python", "REST APIs", "SQL", "Docker"],
-    "preferred_skills": ["Kubernetes", "Go", "Redis"],
-    "required_experience_years": 5,
-    "required_education": "",
-    "responsibilities": ["Design and build scalable APIs"],
-    "benefits": ["Health", "401k", "Remote-first"],
-}
+SAMPLE_JD = "Backend Developer: Python, FastAPI, SQL, REST APIs. Docker is a plus."
 
 
-@patch("agents.resume_parser.call_llm", return_value=MOCK_RESUME_DATA)
-def test_resume_parser_happy_path(mock_call):
-    state: GraphState = {"resume_text": SAMPLE_RESUME, "errors": []}
-    result = run_resume_parser(state)
-    assert result["resume_data"]["name"] == "John Doe"
-    assert "Python" in result["resume_data"]["skills"]
-    assert result.get("errors", []) == []
+@pytest.fixture
+def mock_llm_agents():
+    with (
+        patch("agents.resume_parser.call_llm", return_value=MOCK_RESUME_DATA),
+        patch("agents.jd_parser.call_llm", return_value=MOCK_JD_DATA) as jd,
+        patch("agents.scoring_agent.call_llm", return_value=MOCK_SCORE),
+        patch("agents.gap_agent.call_llm", return_value=MOCK_GAPS),
+        patch("agents.interview_prep_agent.call_llm", return_value=MOCK_QUESTIONS),
+    ):
+        yield jd
 
 
-def test_resume_parser_empty_text():
-    state: GraphState = {"resume_text": "", "errors": []}
-    result = run_resume_parser(state)
-    assert any("empty" in e for e in result["errors"])
+def test_pipeline_with_jd(mock_llm_agents):
+    result = pipeline.invoke({"resume_text": SAMPLE_RESUME, "jd_text": SAMPLE_JD, "errors": []})
+
+    assert result["errors"] == []
+    assert result["resume_data"] == MOCK_RESUME_DATA
+    assert result["jd_data"] == MOCK_JD_DATA
+    assert result["score"] == MOCK_SCORE
+    assert result["gaps"] == MOCK_GAPS
+    assert result["job_matches"]
+    assert result["interview_questions"] == MOCK_QUESTIONS
 
 
-@patch("agents.jd_parser.call_llm", return_value=MOCK_JD_DATA)
-def test_jd_parser_happy_path(mock_call):
-    state: GraphState = {"jd_text": SAMPLE_JD, "errors": []}
-    result = run_jd_parser(state)
-    assert result["jd_data"]["job_title"] == "Backend Engineer"
-    assert "Python" in result["jd_data"]["required_skills"]
+def test_pipeline_without_jd_skips_jd_parser(mock_llm_agents):
+    result = pipeline.invoke({"resume_text": SAMPLE_RESUME, "jd_text": "", "errors": []})
+
+    assert result["errors"] == []
+    assert result["jd_data"] is None
+    assert result["interview_questions"] == MOCK_QUESTIONS
+    mock_llm_agents.assert_not_called()
 
 
-def test_jd_parser_empty_text():
-    state: GraphState = {"jd_text": "", "errors": []}
-    result = run_jd_parser(state)
-    assert result.get("jd_data") is None
-    assert result.get("errors", []) == []
+@pytest.mark.live
+def test_pipeline_live():
+    result = pipeline.invoke({"resume_text": SAMPLE_RESUME, "jd_text": SAMPLE_JD, "errors": []})
 
+    print("\n--- Pipeline result (live LLM) ---")
+    print(json.dumps(result, indent=2))
+
+    assert result["errors"] == []
+    for key in ("resume_data", "jd_data", "score", "gaps", "interview_questions"):
+        assert result[key] is not None, key

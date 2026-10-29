@@ -17,6 +17,8 @@
 
 </div>
 
+[Live Link 🚀](https://resume-x-analyzer.vercel.app/)
+
 ResumeXAnalyzer is a multi-agent resume analysis and evaluation platform. It uploads a resume (PDF/DOCX) and matching Job Description (optional text), orchestrating a team of specialized AI agents built with LangGraph and powered by Gemini models to deliver structural data extraction, fit scoring, skill gap identification, local job matching, and customized interview preparation.
 
 ---
